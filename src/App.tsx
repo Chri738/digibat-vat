@@ -1,5 +1,4 @@
-import './index.css';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import type { ClientProfile, LineItem } from './types';
 import { REGIME_LABELS } from './types';
 import { normalizeVatNumber, determineRegime, computeInvoiceTotals, checkVies } from './vatEngine';
@@ -49,17 +48,27 @@ export default function App() {
   const handleViesCheck = async () => {
     if (!client.vatNumber) return;
     setCheckingVies(true);
-    const cleanVat = normalizeVatNumber(client.vatNumber);
-    const result = await checkVies(cleanVat);
-    setCheckingVies(false);
-    
-    setClient(prev => ({
-      ...prev,
-      viesValid: result.isValid,
-      name: result.name || prev.name,
-      address: result.address || prev.address,
-      isVatSubject: result.isValid ? true : prev.isVatSubject,
-    }));
+    try {
+      const cleanVat = normalizeVatNumber(client.vatNumber);
+      const result = await checkVies(cleanVat);
+      
+      setClient(prev => ({
+        ...prev,
+        viesValid: result?.isValid ?? false,
+        name: (result?.name && result.name !== '---') ? result.name : prev.name,
+        address: (result?.address && result.address !== '---') ? result.address : prev.address,
+        isVatSubject: result?.isValid ? true : prev.isVatSubject,
+      }));
+    } catch (error) {
+      console.error("Erreur VIES :", error);
+      setClient(prev => ({
+        ...prev,
+        viesValid: false,
+      }));
+      alert("La vérification VIES automatique n'a pas pu aboutir. Vous pouvez valider ou changer le statut d'assujetti manuellement ci-dessous.");
+    } finally {
+      setCheckingVies(false);
+    }
   };
 
   const handleAddItem = () => setItems(prev => [...prev, newLineItem()]);
@@ -96,7 +105,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-12">
+    <div className="min-h-screen bg-slate-50 text-slate-800 pb-12 font-sans">
       {/* En-tête */}
       <header className="bg-white border-b border-slate-200 py-6 px-4 mb-8 shadow-sm">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -183,15 +192,15 @@ export default function App() {
                     type="text" 
                     value={client.vatNumber} 
                     onChange={e => setClient({ ...client, vatNumber: e.target.value })} 
-                    placeholder="BE 0123.456.789" 
+                    placeholder="BE0400378485" 
                     className="flex-1 p-3 border rounded-xl border-slate-300 font-mono"
                   />
                   <button 
                     onClick={handleViesCheck} 
                     disabled={checkingVies || !client.vatNumber}
-                    className="bg-slate-800 text-white px-5 py-3 rounded-xl font-medium hover:bg-slate-700 disabled:opacity-50"
+                    className="bg-blue-600 text-white px-5 py-3 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition"
                   >
-                    {checkingVies ? 'Vérification...' : 'Vérifier VIES'}
+                    {checkingVies ? 'Vérification en cours...' : 'Vérifier VIES'}
                   </button>
                 </div>
               </div>
@@ -202,7 +211,7 @@ export default function App() {
                   <select 
                     value={client.isVatSubject ? 'true' : 'false'}
                     onChange={e => setClient({ ...client, isVatSubject: e.target.value === 'true' })}
-                    className="p-2 border rounded-lg bg-white text-sm font-semibold"
+                    className="p-2 border rounded-lg bg-white text-sm font-semibold text-slate-800"
                   >
                     <option value="false">Particulier (Non assujetti)</option>
                     <option value="true">Entreprise / Pro (Assujetti)</option>
@@ -211,7 +220,7 @@ export default function App() {
 
                 {client.viesValid !== null && (
                   <div className={`p-3 rounded-lg text-sm font-medium ${client.viesValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                    {client.viesValid ? '✓ Numéro VIES Valide et actif' : '⚠️ Numéro non trouvé sur VIES ou invalide'}
+                    {client.viesValid ? '✓ Numéro VIES Valide et actif' : '⚠️ Vérification non confirmée automatiquement. Veuillez vérifier le statut manuel.'}
                   </div>
                 )}
               </div>
@@ -290,7 +299,7 @@ export default function App() {
                     onClick={() => setOutdoorType('maintenance')}
                     className={`p-3 border-2 rounded-xl text-xs text-left font-medium ${outdoorType === 'maintenance' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-slate-200'}`}
                   >
-                    🌱 Entretien courant (Tonte...)
+                    🌱 Entretien courant
                   </button>
                   <button 
                     onClick={() => setOutdoorType('structural')}
