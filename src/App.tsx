@@ -1,3 +1,4 @@
+import './index.css';
 import { useState, useCallback } from 'react';
 import type { ClientProfile, LineItem } from './types';
 import { REGIME_LABELS } from './types';
