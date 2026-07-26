@@ -5,7 +5,6 @@ import { VatInput, ClientType, PropertyUsage } from './types/vat';
 type Step = 1 | 2 | 3;
 type WorkType = 'RENOVATION' | 'HEAT_PUMP' | 'DEMOLITION' | 'GARDEN_MAINTENANCE' | 'GARDEN_HEAVY';
 
-// --- DICTIONNAIRE DE TRADUCTION / VERTAALWOORDENBOEK ---
 const translations = {
   FR: {
     title: "DigiBât VAT / DigiBouw BTW",
@@ -22,6 +21,7 @@ const translations = {
       clientName: "Nom / Entreprise",
       country: "Pays",
       vatNumber: "Numéro de TVA",
+      vatPlaceholder: "ex: BE0123456789 (laisser vide pour un particulier)",
       verifyVies: "Vérifier VIES",
       statusLabel: "Statut Assujetti à la TVA",
       individual: "Particulier (Non assujetti)",
@@ -57,6 +57,7 @@ const translations = {
       copied: "Copié !",
       legalRefTitle: "Références légales",
       recapVat: "BTW / TVA",
+      recapNoVat: "Particulier (Non assujetti)",
       recapAge: "Ancienneté",
       recapWork: "Nature des travaux",
       recapUsage: "Surface / Usage",
@@ -91,6 +92,7 @@ const translations = {
       clientName: "Naam / Bedrijf",
       country: "Land",
       vatNumber: "Btw-nummer",
+      vatPlaceholder: "bv. BE0123456789 (leeglaten voor particulier)",
       verifyVies: "VIES controleren",
       statusLabel: "Btw-status van de klant",
       individual: "Particulier (Niet btw-plichtig)",
@@ -126,6 +128,7 @@ const translations = {
       copied: "Gekopieerd!",
       legalRefTitle: "Wettelijke referenties",
       recapVat: "BTW / TVA",
+      recapNoVat: "Particulier (Niet btw-plichtig)",
       recapAge: "Ouderdom",
       recapWork: "Aard der werken",
       recapUsage: "Oppervlakte / Gebruik",
@@ -158,7 +161,7 @@ export default function App() {
 
   // Données du formulaire
   const [clientName, setClientName] = useState('');
-  const [vatNumber, setVatNumber] = useState('BE0828033669');
+  const [vatNumber, setVatNumber] = useState('');
   const [clientType, setClientType] = useState<ClientType>('INDIVIDUAL');
   const [countryCode, setCountryCode] = useState('BE');
   const [submitsPeriodicVat, setSubmitsPeriodicVat] = useState(false);
@@ -179,7 +182,7 @@ export default function App() {
     client: {
       type: clientType,
       countryCode,
-      vatNumber,
+      vatNumber: clientType === 'INDIVIDUAL' ? undefined : vatNumber,
       submitsPeriodicVatReturns: submitsPeriodicVat,
     },
     property: {
@@ -201,7 +204,7 @@ export default function App() {
   const currentYear = new Date().getFullYear();
   const buildingAge = currentYear - firstOccupancyYear;
 
-  // Libellé de la nature des travaux selon la langue
+  // Libellé de la nature des travaux
   const getWorkTypeName = () => {
     switch (workType) {
       case 'RENOVATION': return t.step2.renovation;
@@ -257,7 +260,6 @@ export default function App() {
       : "Normaal btw-tarief van 21% van toepassing.";
   };
 
-  // Gestion du bouton Copier la mention
   const handleCopyMention = () => {
     const textToCopy = getLegalMentionText();
     navigator.clipboard.writeText(textToCopy);
@@ -265,12 +267,11 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Gestion de l'enregistrement dans l’historique
   const handleSaveToHistory = () => {
     const mainRate = result.rates[0]?.rate || 21;
     const newEntry = {
       date: new Date().toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }),
-      client: clientName || (lang === 'FR' ? 'Client anonyme' : 'Anonieme klant'),
+      client: clientName || (lang === 'FR' ? 'Client particulier' : 'Particuliere klant'),
       regime: result.taxRegime,
       rates: `${mainRate}%`,
     };
@@ -279,13 +280,14 @@ export default function App() {
     setTimeout(() => setSavedNotification(false), 2500);
   };
 
-  // Réinitialiser / Recommencer
   const handleReset = () => {
     setCurrentStep(1);
     setClientName('');
+    setVatNumber('');
+    setClientType('INDIVIDUAL');
+    setSubmitsPeriodicVat(false);
   };
 
-  // Styles et libellés de la bannière selon le régime fiscal
   const getBannerStyle = () => {
     const mainRate = result.rates[0]?.rate;
     if (result.taxRegime === 'REVERSE_CHARGE' || result.isReverseCharge) {
@@ -359,10 +361,10 @@ export default function App() {
       {/* Contenu principal */}
       <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Colonne Gauche : Formulaire & Verdict */}
+        {/* Colonne Gauche */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Indicateur d'étapes */}
+          {/* Steps Nav */}
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center text-sm">
             <div
               onClick={() => setCurrentStep(1)}
@@ -444,23 +446,6 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                  {t.step1.vatNumber}
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={vatNumber}
-                    onChange={(e) => setVatNumber(e.target.value)}
-                    className="flex-1 border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button className="bg-blue-100 text-blue-900 font-medium text-xs px-4 rounded-lg hover:bg-blue-200 transition">
-                    {t.step1.verifyVies}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
                   {t.step1.statusLabel}
                 </label>
                 <select
@@ -470,6 +455,7 @@ export default function App() {
                     if (val === 'INDIVIDUAL') {
                       setClientType('INDIVIDUAL');
                       setSubmitsPeriodicVat(false);
+                      setVatNumber(''); // Réinitialise le numéro de TVA pour un particulier
                     } else if (val === 'VAT_PERIODIC') {
                       setClientType('COMPANY');
                       setSubmitsPeriodicVat(true);
@@ -478,13 +464,33 @@ export default function App() {
                       setSubmitsPeriodicVat(false);
                     }
                   }}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                 >
                   <option value="INDIVIDUAL">{t.step1.individual}</option>
                   <option value="VAT_PERIODIC">{t.step1.vatPeriodic}</option>
                   <option value="VAT_NO_PERIODIC">{t.step1.vatNoPeriodic}</option>
                 </select>
               </div>
+
+              {clientType !== 'INDIVIDUAL' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                    {t.step1.vatNumber}
+                  </label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder={t.step1.vatPlaceholder}
+                      value={vatNumber}
+                      onChange={(e) => setVatNumber(e.target.value)}
+                      className="flex-1 border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button className="bg-blue-100 text-blue-900 font-medium text-xs px-4 rounded-lg hover:bg-blue-200 transition">
+                      {t.step1.verifyVies}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 flex justify-end">
                 <button
@@ -646,11 +652,11 @@ export default function App() {
             </div>
           )}
 
-          {/* ÉTAPE 3 : RÉSULTAT FISCAL & IMPRESSION */}
+          {/* ÉTAPE 3 : RÉSULTAT FISCAL */}
           {currentStep === 3 && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-0">
               
-              {/* 1. BANNIÈRE DU VERDICT FISCAL */}
+              {/* Bannière de verdict */}
               <div className={`${bannerStyle.bg} text-white p-6 relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4`}>
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-widest text-white/80 font-bold block">
@@ -661,7 +667,6 @@ export default function App() {
                   </h2>
                 </div>
 
-                {/* Badge Taux Appliqué */}
                 <div className={`${bannerStyle.badgeBg} border border-white/20 rounded-2xl p-4 text-center min-w-[120px]`}>
                   <div className="text-3xl font-black">
                     {result.rates[0]?.rate || 21}%
@@ -672,10 +677,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* CONTENU DE LA MOTIVATION ET DES MENTIONS LÉGALES */}
+              {/* Détails */}
               <div className="p-6 space-y-6">
                 
-                {/* 2. MOTIVATION */}
+                {/* Motivation */}
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-slate-900 font-bold text-base">
                     <span className="text-blue-600">⚖️</span>
@@ -686,7 +691,7 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* 3. MENTION LÉGALE À INSÉRER SUR LA FACTURE */}
+                {/* Mention légale */}
                 <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-3 relative">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm">
@@ -694,7 +699,6 @@ export default function App() {
                       <span>{t.step3.mentionTitle}</span>
                     </div>
                     
-                    {/* Bouton Copier */}
                     <button
                       onClick={handleCopyMention}
                       className="flex items-center space-x-1.5 border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition"
@@ -704,12 +708,12 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="bg-white p-4 rounded-lg border border-slate-200 text-sm text-slate-700 leading-relaxed font-sans shadow-inner">
+                  <div className="bg-white p-4 rounded-lg border border-slate-200 text-sm text-slate-700 leading-relaxed shadow-inner">
                     "{getLegalMentionText()}"
                   </div>
                 </div>
 
-                {/* 4. RÉFÉRENCES LÉGALES */}
+                {/* Références légales */}
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm">
                     <span className="text-blue-600">📄</span>
@@ -728,11 +732,13 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 5. RÉCAPITULATIF DES CRITÈRES */}
+                {/* Récapitulatif des critères */}
                 <div className="bg-slate-100/70 p-4 rounded-xl border border-slate-200 text-xs grid grid-cols-2 md:grid-cols-4 gap-4 text-slate-600">
                   <div>
                     <span className="block font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t.step3.recapVat}</span>
-                    <span className="font-semibold text-slate-800">{vatNumber || '-'}</span>
+                    <span className="font-semibold text-slate-800">
+                      {clientType === 'INDIVIDUAL' || !vatNumber ? t.step3.recapNoVat : vatNumber}
+                    </span>
                   </div>
                   <div>
                     <span className="block font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t.step3.recapAge}</span>
@@ -752,7 +758,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 6. BOUTONS D'ACTION */}
+                {/* Boutons d'action */}
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2 border-t border-slate-200">
                   <button
                     onClick={handleReset}
@@ -781,7 +787,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Toast de confirmation */}
                 {savedNotification && (
                   <div className="bg-emerald-500 text-white text-xs font-bold p-3 rounded-lg text-center transition">
                     {t.step3.savedSuccess}
@@ -790,7 +795,6 @@ export default function App() {
 
               </div>
 
-              {/* 7. BANNIÈRE D'ALERTE EN BAS */}
               <div className={`p-3 text-center text-xs font-bold border-t ${bannerStyle.alertBg}`}>
                 Taux {result.rates[0]?.rate || 21}% — {bannerStyle.text}
               </div>
@@ -799,7 +803,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Colonne Droite : Historique des Déterminations */}
+        {/* Historique */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit space-y-4">
           <div className="flex items-center space-x-2 border-b pb-3">
             <span className="text-lg">📜</span>
