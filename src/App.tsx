@@ -455,7 +455,7 @@ export default function App() {
             </div>
           )}
 
-          {/* ÉTAPE 3 : RÉSULTAT FISCAL (STYLE EXACT DES IMAGES 1, 2 ET 3) */}
+          {/* ÉTAPE 3 : RÉSULTAT FISCAL ET IMPRESSION */}
           {currentStep === 3 && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-0">
               
@@ -544,10 +544,7 @@ export default function App() {
                     ) : (
                       <>
                         <span className="bg-slate-100 border border-slate-300 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg">
-                          Art. 19 §2 Code TVA / Btw-Wetboek
-                        </span>
-                        <span className="bg-slate-100 border border-slate-300 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg">
-                          Art. 20 KB nr. 1
+                          AR n° 20, Annexe, Tableau A, Rubrique XXXVIII
                         </span>
                       </>
                     )}
@@ -578,23 +575,34 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 6. BOUTONS D'ACTION (RECOMMENCER ET ENREGISTRER) */}
+                {/* 6. BOUTONS D'ACTION (RECOMMENCER, ENREGISTRER ET IMPRIMER) */}
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2 border-t border-slate-200">
                   <button
                     onClick={handleReset}
-                    className="w-full sm:w-auto border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-xl transition flex items-center justify-center space-x-2"
+                    className="w-full sm:w-auto border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center space-x-2"
                   >
                     <span>🔄</span>
                     <span>Recommencer</span>
                   </button>
 
-                  <button
-                    onClick={handleSaveToHistory}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2"
-                  >
-                    <span>💾</span>
-                    <span>Enregistrer dans l'historique</span>
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                    <button
+                      onClick={handleSaveToHistory}
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+                    >
+                      <span>💾</span>
+                      <span>Enregistrer</span>
+                    </button>
+
+                    {/* BOUTON IMPRIMER VERT VISIBLE */}
+                    <button
+                      onClick={() => window.print()}
+                      className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+                    >
+                      <span>🖨️</span>
+                      <span>Imprimer la fiche justificative</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Toast de confirmation d'enregistrement */}
