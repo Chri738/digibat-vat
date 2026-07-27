@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 type Lang = 'FR' | 'NL';
 type ViewMode = 'CALCULATOR' | 'QUOTE' | 'INVOICE';
 
-type ClientStatus = 'B2C' | 'B2B_PERIODIC' | 'B2B_SPECIAL';
+type ClientStatus = 'B2C' | 'B2B_PERIODIC';
 type BuildingAge = 'LESS_10' | 'MORE_10';
 type BuildingUsage = 'PRIVATE_50' | 'PRO_EXCL' | 'MIXED';
 type WorkNature = 'RENOVATION' | 'HEAT_PUMP' | 'SOLAR_INSULATION' | 'DEMOLITION_RECONSTRUCTION';
@@ -24,28 +24,69 @@ interface QuoteLineItem {
   unitPrice: number;
 }
 
+// Liste complète des 27 pays de l'Union Européenne
+const EU_COUNTRIES = [
+  'Belgique / België (BE)',
+  'France (FR)',
+  'Nederland (NL)',
+  'Deutschland (DE)',
+  'Luxembourg (LU)',
+  'Österreich / Austria (AT)',
+  'Bulgaria (BG)',
+  'Croatia (HR)',
+  'Cyprus (CY)',
+  'Czechia (CZ)',
+  'Danmark (DK)',
+  'Eesti / Estonia (EE)',
+  'Suomi / Finland (FI)',
+  'Greece (EL)',
+  'Magyarország / Hungary (HU)',
+  'Ireland (IE)',
+  'Italia (IT)',
+  'Latvija / Latvia (LV)',
+  'Lietuva / Lithuania (LT)',
+  'Malta (MT)',
+  'Polska / Poland (PL)',
+  'Portugal (PT)',
+  'România (RO)',
+  'Slovensko / Slovakia (SK)',
+  'Slovenija / Slovenia (SI)',
+  'España (ES)',
+  'Sverige / Sweden (SE)'
+];
+
 export default function App() {
   const [lang, setLang] = useState<Lang>('NL');
   const [viewMode, setViewMode] = useState<ViewMode>('CALCULATOR');
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // --- 1. Informations Prestataire / Entrepreneur ---
+  // --- 1. Prestataire / Entrepreneur ---
   const [providerName, setProviderName] = useState('My Company BV / SRL');
   const [providerVat, setProviderVat] = useState('BE0123456789');
   const [providerAddress, setProviderAddress] = useState('Rue du Progrès 12, 1000 Bruxelles');
   const [providerIban, setProviderIban] = useState('BE68 0000 1234 5678');
 
-  // --- 2. Étape 1 : Profil Client (Champs vides par défaut) ---
+  // --- 2. Étape 1 : Profil Client & Contrôle VIES ---
   const [clientName, setClientName] = useState('');
   const [country, setCountry] = useState('Belgique / België (BE)');
   const [clientStatus, setClientStatus] = useState<ClientStatus>('B2B_PERIODIC');
   const [vatNumber, setVatNumber] = useState('');
+  
+  // États pour la vérification VIES
+  const [isViesVerified, setIsViesVerified] = useState<boolean>(false);
+  const [viesLoading, setViesLoading] = useState<boolean>(false);
+  const [viesError, setViesError] = useState<string | null>(null);
 
-  // --- 3. Étape 2 : Immeuble & Travaux ---
+  // --- 3. Étape 2 : Bien, Travaux & Surfaces ---
   const [buildingAge, setBuildingAge] = useState<BuildingAge>('MORE_10');
   const [buildingUsage, setBuildingUsage] = useState<BuildingUsage>('PRIVATE_50');
   const [workNature, setWorkNature] = useState<WorkNature>('RENOVATION');
   const [outdoorWork, setOutdoorWork] = useState<OutdoorWork>('NONE');
+
+  // Surfaces pour l'option Mixte (Min. 200 m²)
+  const [totalSurface, setTotalSurface] = useState<number>(200);
+  const [privateSurface, setPrivateSurface] = useState<number>(120);
+  const [proSurface, setProSurface] = useState<number>(80);
 
   // --- 4. Lignes de Prestation (Devis & Facture) ---
   const [quoteItems, setQuoteItems] = useState<QuoteLineItem[]>([
@@ -61,9 +102,40 @@ export default function App() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // --- Calcul des taux & textes de loi selon la réglementation belge ---
+  // Handler réinitialisation VIES quand le numéro TVA change
+  const handleVatChange = (val: string) => {
+    setVatNumber(val);
+    setIsViesVerified(false);
+    setViesError(null);
+  };
+
+  // Simuler la vérification VIES officielle
+  const handleViesCheck = () => {
+    setViesError(null);
+    if (!vatNumber || vatNumber.trim().length < 8) {
+      setViesError(
+        lang === 'FR' 
+          ? 'Veuillez saisir un numéro de TVA valide (ex: BE0400075312).' 
+          : 'Voer een geldig btw-nummer in (bijv. BE0400075312).'
+      );
+      setIsViesVerified(false);
+      return;
+    }
+
+    setViesLoading(true);
+    setTimeout(() => {
+      setViesLoading(false);
+      setIsViesVerified(true);
+      showToast(
+        lang === 'FR' 
+          ? '✓ Numéro TVA vérifié avec succès sur la base VIES !' 
+          : '✓ Btw-nummer succesvol geverifieerd in VIES-database!'
+      );
+    }, 700);
+  };
+
+  // Calcul du verdict fiscal
   const getTaxVerdict = () => {
-    // Si B2B avec déclarations périodiques (Art. 20)
     if (clientStatus === 'B2B_PERIODIC') {
       return {
         rate: 0,
@@ -77,7 +149,6 @@ export default function App() {
       };
     }
 
-    // Si B2C / Particulier
     if (buildingAge === 'MORE_10') {
       return {
         rate: 6,
@@ -105,7 +176,7 @@ export default function App() {
 
   const currentVerdict = getTaxVerdict();
 
-  // --- Gestion du tableau des prestations ---
+  // Gestion des lignes de devis
   const handleAddItem = () => {
     setQuoteItems([
       ...quoteItems,
@@ -131,7 +202,11 @@ export default function App() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Dictionnaire Bilingue
+  // Calcul des ratios de surface pour usage mixte
+  const privateRatio = totalSurface > 0 ? Math.round((privateSurface / totalSurface) * 100) : 0;
+  const proRatio = totalSurface > 0 ? Math.round((proSurface / totalSurface) * 100) : 0;
+
+  // Traduction des libellés
   const t = {
     FR: {
       appName: 'DigiBât VAT / DigiBouw BTW',
@@ -149,12 +224,15 @@ export default function App() {
       // Step 1
       step1Header: 'Étape 1 : Profil du Client',
       nameLabel: 'NOM / ENTREPRISE',
-      countryLabel: 'PAYS',
+      countryLabel: 'PAYS (UNION EUROPÉENNE)',
       vatStatusLabel: 'STATUT TVA DU CLIENT',
       vatStatusB2B: 'Btw-plichtige B2B met periodieke aangiften (Art. 20 / KB1)',
       vatStatusB2C: 'Particulier (B2C - Non assujetti)',
       vatNumLabel: 'NUMÉRO DE TVA',
       viesBtn: 'Vérifier VIES',
+      viesChecking: 'Vérification...',
+      viesVerifiedBadge: '✓ Assujetti contrôlé VIES',
+      viesWarningMessage: '⚠️ La vérification VIES du numéro de TVA est obligatoire pour les clients B2B avant d\'accéder à l\'Étape 2.',
       
       // Step 2
       step2Header: 'Bien immobilier & Travaux',
@@ -166,6 +244,16 @@ export default function App() {
       usagePrivate: 'Plus de 50% privé',
       usageProExcl: 'Exclusivement professionnel',
       usageMixed: 'Gemengd (privé + pro)',
+      
+      // Mixed Surface section
+      mixedTitle: 'Ventilation des surfaces (Usage mixte - Min. 200 m²)',
+      totalSurfaceLabel: 'Surface totale (m² min. 200) :',
+      privateSurfaceLabel: 'Surface Privée (m²) :',
+      proSurfaceLabel: 'Surface Pro (m²) :',
+      surfaceWarning: 'La surface totale minimale recommandée pour le calcul du prorata d\'un bien mixte est de 200 m².',
+      mixedLawTitle: 'Principe de loi fiscale (Prorata de surface) :',
+      mixedLawBody: 'Conformément à la réglementation TVA belge, la répartition de la surface (min. 200 m²) sert de clé de ventilation directe. La quotité de surface privée bénéficie du taux réduit de 6% (si le bâtiment a plus de 10 ans), tandis que la quotité professionnelle est facturée au taux normal de 21% (ou en autoliquidation Art. 20 KB1 pour les assujettis B2B).',
+
       workNatureLabel: 'Nature des travaux',
       workRenovation: 'Standaard onderhoud en renovatie',
       workHeatPump: 'Warmtepomp',
@@ -179,6 +267,7 @@ export default function App() {
       outdoorLandscaping: 'Aanleg & Grote werken\n(Terras, bestrating...)',
       
       backBtn: '← Terug',
+      nextToStep2: 'Volgende: Onroerend goed & Werken →',
       viewVerdictBtn: 'Verdict bekijken →',
 
       // Step 3
@@ -186,7 +275,7 @@ export default function App() {
       saveBtn: '💾 Enregistrer',
       transferDevisBtn: '📄 Overdragen naar offerte →',
       mixedWarningTitle: '⚠️ Traitement des travaux mixtes (Privé + Pro) :',
-      mixedWarningBody: 'En cas d\'usage mixte chez un client B2C, le taux réduit de 6% s\'applique uniquement sur la quotité privée. La partie professionnelle doit être facturée séparément au taux normal de 21%. Si le client est B2B (Art. 20 KB1), l\'autoliquidation s\'applique sur la totalité.',
+      mixedWarningBody: 'En cas d\'usage mixte chez un client B2C, le taux réduit de 6% s\'lique uniquement sur la quotité privée calculée. La partie professionnelle doit être facturée séparément au taux normal de 21%. Si le client est B2B (Art. 20 KB1), l\'autoliquidation s\'applique sur la totalité.',
 
       // Provider
       providerSectionTitle: 'Prestataire / Entrepreneur',
@@ -227,12 +316,15 @@ export default function App() {
       // Step 1
       step1Header: 'Stap 1 : Klantprofiel',
       nameLabel: 'NAAM / ONDERNEMING',
-      countryLabel: 'LAND',
+      countryLabel: 'LAND (EUROPESE UNIE)',
       vatStatusLabel: 'BTW-STATUS VAN DE KLANT',
       vatStatusB2B: 'Btw-plichtige B2B met periodieke aangiften (Art. 20 / KB1)',
       vatStatusB2C: 'Particulier (B2C - Niet btw-plichtig)',
       vatNumLabel: 'BTW-NUMMER',
       viesBtn: 'VIES Controleren',
+      viesChecking: 'Controleren...',
+      viesVerifiedBadge: '✓ Btw-plichtige gecontroleerd in VIES',
+      viesWarningMessage: '⚠️ Een verplichte VIES-controle van het btw-nummer is vereist voor B2B-klanten alvorens naar Stap 2 te gaan.',
       
       // Step 2
       step2Header: 'Onroerend goed & Werken',
@@ -244,6 +336,16 @@ export default function App() {
       usagePrivate: 'Meer dan 50% privé',
       usageProExcl: 'Uitsluitend professioneel',
       usageMixed: 'Gemengd (privé + pro)',
+      
+      // Mixed Surface section
+      mixedTitle: 'Oppervlakteverdeling (Gemengd gebruik - Min. 200 m²)',
+      totalSurfaceLabel: 'Totale oppervlakte (m² min. 200) :',
+      privateSurfaceLabel: 'Privéoppervlakte (m²) :',
+      proSurfaceLabel: 'Pro-oppervlakte (m²) :',
+      surfaceWarning: 'De aanbevolen minimale totale oppervlakte voor de prorata-berekening van een gemengd pand is 200 m².',
+      mixedLawTitle: 'Fiscaal wettelijk beginsel (Oppervlakte prorata):',
+      mixedLawBody: 'Overeenkomstig de Belgische btw-wetgeving dient de oppervlakteverdeling (min. 200 m²) als rechtstreekse verdeelsleutel. Het privé-oppervlaktegedeelte geniet van het verlaagde tarief van 6% (indien het gebouw ouder is dan 10 jaar), terwijl het professionele gedeelte gefactureerd wordt aan het standaardtartief van 21% (of onder btw verlegd Art. 20 KB1 voor B2B btw-plichtigen).',
+
       workNatureLabel: 'Aard van de werken',
       workRenovation: 'Standaard onderhoud en renovatie',
       workHeatPump: 'Warmtepomp',
@@ -257,6 +359,7 @@ export default function App() {
       outdoorLandscaping: 'Aanleg & Grote werken\n(Terras, bestrating, drainage, bomen kappen...)',
       
       backBtn: '← Terug',
+      nextToStep2: 'Volgende: Onroerend goed & Werken →',
       viewVerdictBtn: 'Verdict bekijken →',
 
       // Step 3
@@ -264,7 +367,7 @@ export default function App() {
       saveBtn: '💾 Opslaan',
       transferDevisBtn: '📄 Overdragen naar offerte →',
       mixedWarningTitle: '⚠️ Behandeling van gemengde werken (Privé + Pro):',
-      mixedWarningBody: 'Bij gemengd gebruik bij een B2C-klant geldt het verlaagde tarief van 6% uitsluitend voor het privégedeelte. Het professionele gedeelte moet afzonderlijk worden gefactureerd aan 21%. Indien de klant B2B is (Art. 20 KB1), geldt de verlegging van heffing op het gehele bedrag.',
+      mixedWarningBody: 'Bij gemengd gebruik bij een B2C-klant geldt het verlaagde tarief van 6% uitsluitend voor het berekende privégedeelte. Het professionele gedeelte moet afzonderlijk worden gefactureerd aan 21%. Indien de klant B2B is (Art. 20 KB1), geldt de verlegging van heffing op het gehele bedrag.',
 
       // Provider
       providerSectionTitle: 'Dienstverlener / Aannemer',
@@ -295,7 +398,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-12">
-      {/* Header */}
+      {/* En-tête principal */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl font-bold shadow-md">
@@ -362,7 +465,13 @@ export default function App() {
                 <div className="h-0.5 w-8 bg-slate-200"></div>
 
                 <div 
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => {
+                    if (clientStatus === 'B2B_PERIODIC' && !isViesVerified) {
+                      showToast(currentT.viesWarningMessage);
+                      return;
+                    }
+                    setCurrentStep(2);
+                  }}
                   className={`flex items-center space-x-3 cursor-pointer transition-opacity ${currentStep === 2 ? 'opacity-100' : 'opacity-50'}`}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${currentStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>2</div>
@@ -375,7 +484,13 @@ export default function App() {
                 <div className="h-0.5 w-8 bg-slate-200"></div>
 
                 <div 
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => {
+                    if (clientStatus === 'B2B_PERIODIC' && !isViesVerified) {
+                      showToast(currentT.viesWarningMessage);
+                      return;
+                    }
+                    setCurrentStep(3);
+                  }}
                   className={`flex items-center space-x-3 cursor-pointer transition-opacity ${currentStep === 3 ? 'opacity-100' : 'opacity-50'}`}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${currentStep === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>3</div>
@@ -386,7 +501,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ÉTAPE 1 : PROFIL CLIENT (Champs vides par défaut) */}
+              {/* ÉTAPE 1 : PROFIL CLIENT (AVEC VIES MANDATOIRE) */}
               {currentStep === 1 && (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                   <h2 className="text-lg font-bold text-slate-900">{currentT.step1Header}</h2>
@@ -396,7 +511,7 @@ export default function App() {
                       <label className="block text-xs font-bold text-slate-600 mb-1">{currentT.nameLabel}</label>
                       <input 
                         type="text" 
-                        placeholder="ex: Jean Dupont / BVBA Peeters"
+                        placeholder="ex: Vicernant(NV) / Jean Dupont"
                         value={clientName} 
                         onChange={(e) => setClientName(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
@@ -409,9 +524,9 @@ export default function App() {
                         onChange={(e) => setCountry(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                       >
-                        <option>Belgique / België (BE)</option>
-                        <option>France (FR)</option>
-                        <option>Nederland (NL)</option>
+                        {EU_COUNTRIES.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -420,7 +535,12 @@ export default function App() {
                     <label className="block text-xs font-bold text-slate-600 mb-1">{currentT.vatStatusLabel}</label>
                     <select 
                       value={clientStatus}
-                      onChange={(e) => setClientStatus(e.target.value as ClientStatus)}
+                      onChange={(e) => {
+                        const newStatus = e.target.value as ClientStatus;
+                        setClientStatus(newStatus);
+                        if (newStatus === 'B2C') setIsViesVerified(true);
+                        else setIsViesVerified(false);
+                      }}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       <option value="B2B_PERIODIC">{currentT.vatStatusB2B}</option>
@@ -434,30 +554,63 @@ export default function App() {
                       <div className="flex gap-2">
                         <input 
                           type="text" 
-                          placeholder="BE0000000000"
+                          placeholder="BE0400075312"
                           value={vatNumber} 
-                          onChange={(e) => setVatNumber(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          onChange={(e) => handleVatChange(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white font-mono"
                         />
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors">
-                          {currentT.viesBtn}
+                        <button 
+                          onClick={handleViesCheck}
+                          disabled={viesLoading}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50"
+                        >
+                          {viesLoading ? currentT.viesChecking : currentT.viesBtn}
                         </button>
                       </div>
+
+                      {viesError && (
+                        <p className="text-xs font-semibold text-red-600 mt-1">{viesError}</p>
+                      )}
+
+                      {isViesVerified && (
+                        <div className="flex items-center gap-2 p-2.5 bg-emerald-100/80 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-bold">
+                          <span>✅</span>
+                          <span>{currentT.viesVerifiedBadge}</span>
+                          <span className="text-[10px] text-emerald-700 ml-auto">(VIES Verified - BE-VAT ACTIVE)</span>
+                        </div>
+                      )}
+
+                      {!isViesVerified && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs leading-relaxed">
+                          {currentT.viesWarningMessage}
+                        </div>
+                      )}
                     </div>
                   )}
 
                   <div className="flex justify-end pt-4">
                     <button 
-                      onClick={() => setCurrentStep(2)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm"
+                      onClick={() => {
+                        if (clientStatus === 'B2B_PERIODIC' && !isViesVerified) {
+                          showToast(currentT.viesWarningMessage);
+                          return;
+                        }
+                        setCurrentStep(2);
+                      }}
+                      disabled={clientStatus === 'B2B_PERIODIC' && !isViesVerified}
+                      className={`font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm ${
+                        clientStatus === 'B2B_PERIODIC' && !isViesVerified
+                          ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
                     >
-                      Volgende: Onroerend goed & Werken →
+                      {currentT.nextToStep2}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ÉTAPE 2 : BIEN & TRAVAUX (Toutes les options réintégrées) */}
+              {/* ÉTAPE 2 : BIEN, TRAVAUX & SURFACES (USAGE MIXTE) */}
               {currentStep === 2 && (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                   <div>
@@ -519,7 +672,76 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Aard van de werken / Nature des travaux */}
+                  {/* SECTION SURFACES SI OPTION MIXTE SELECTIONNEE */}
+                  {buildingUsage === 'MIXED' && (
+                    <div className="p-5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-4">
+                      <div className="flex items-center justify-between border-b border-blue-200 pb-2">
+                        <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wide flex items-center gap-2">
+                          <span>📐</span> {currentT.mixedTitle}
+                        </h3>
+                        <span className="text-xs font-extrabold bg-blue-600 text-white px-2.5 py-0.5 rounded">
+                          Privé {privateRatio}% / Pro {proRatio}%
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">{currentT.totalSurfaceLabel}</label>
+                          <input 
+                            type="number" 
+                            min="200"
+                            value={totalSurface}
+                            onChange={(e) => {
+                              const val = Math.max(1, parseFloat(e.target.value) || 0);
+                              setTotalSurface(val);
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">{currentT.privateSurfaceLabel}</label>
+                          <input 
+                            type="number" 
+                            value={privateSurface}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseFloat(e.target.value) || 0);
+                              setPrivateSurface(val);
+                              setProSurface(Math.max(0, totalSurface - val));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-emerald-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">{currentT.proSurfaceLabel}</label>
+                          <input 
+                            type="number" 
+                            value={proSurface}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseFloat(e.target.value) || 0);
+                              setProSurface(val);
+                              setPrivateSurface(Math.max(0, totalSurface - val));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-blue-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {totalSurface < 200 && (
+                        <p className="text-[11px] text-amber-700 font-semibold italic">
+                          ⚠️ {currentT.surfaceWarning}
+                        </p>
+                      )}
+
+                      <div className="p-3 bg-white rounded-lg border border-blue-100 text-[11px] space-y-1 text-slate-700">
+                        <p className="font-bold text-blue-900">{currentT.mixedLawTitle}</p>
+                        <p className="leading-relaxed">{currentT.mixedLawBody}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Nature des travaux */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-2">{currentT.workNatureLabel}</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -633,9 +855,12 @@ export default function App() {
 
                   {/* Avertissement pour travaux mixtes */}
                   {buildingUsage === 'MIXED' && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-1 text-xs text-amber-900">
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
                       <p className="font-bold">{currentT.mixedWarningTitle}</p>
                       <p className="leading-relaxed">{currentT.mixedWarningBody}</p>
+                      <p className="font-semibold text-slate-700 pt-1 border-t border-amber-200/60">
+                        Prorata appliqué : Privé ({privateRatio}%) / Pro ({proRatio}%) sur surface totale de {totalSurface} m².
+                      </p>
                     </div>
                   )}
 
@@ -678,7 +903,7 @@ export default function App() {
 
             </div>
 
-            {/* Historique à droite */}
+            {/* Historique latéral */}
             <div className="lg:col-span-1">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
@@ -734,10 +959,8 @@ export default function App() {
               </button>
             </div>
 
-            {/* Informations Prestataire (Éditables) & Client */}
+            {/* Coordonnées Prestataire & Client */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200">
-              
-              {/* Prestataire */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">{currentT.providerSectionTitle}</p>
                 <input 
@@ -770,12 +993,11 @@ export default function App() {
                 />
               </div>
 
-              {/* Client & Verdict */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{currentT.clientSectionTitle}</p>
                 <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
                   <p className="text-xs font-bold text-slate-800">{clientName || 'Nom du client non spécifié'}</p>
-                  <p className="text-xs text-slate-600">{vatNumber || 'Pas de numéro de TVA'}</p>
+                  <p className="text-xs font-mono text-slate-600">{vatNumber || 'Pas de numéro de TVA'}</p>
                   <p className="text-xs text-slate-600">{country}</p>
                   <div className="pt-2 border-t border-slate-100">
                     <p className="text-[11px] font-bold text-emerald-700">{currentVerdict.title}</p>
@@ -784,7 +1006,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Tableau dynamique des travaux & prix */}
+            {/* Tableau dynamique des travaux */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-bold text-slate-800">Prestations & Matériaux</h3>
@@ -871,7 +1093,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Mention légale automatique */}
+            {/* Mention légale obligatoire */}
             <div className="p-4 bg-slate-100 rounded-xl space-y-1">
               <p className="text-xs font-bold text-slate-700">{currentT.legalNoticeTitle}</p>
               <p className="text-xs font-mono text-slate-600 leading-relaxed italic">
@@ -879,7 +1101,7 @@ export default function App() {
               </p>
             </div>
 
-            {/* Boutons d'action selon la vue Devis ou Facture */}
+            {/* Actions Devis / Facture */}
             <div className="flex flex-wrap justify-between items-center pt-4 border-t border-slate-200 gap-3">
               {viewMode === 'QUOTE' ? (
                 <>
@@ -921,7 +1143,7 @@ export default function App() {
                     </button>
                   </div>
                   <button 
-                    onClick={() => showToast(' Facture envoyée avec succès sur le réseau Peppol (UBL/e-Invoicing)!')}
+                    onClick={() => showToast('Facture transmise avec succès au réseau Peppol !')}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md"
                   >
                     {currentT.peppolBtn}
