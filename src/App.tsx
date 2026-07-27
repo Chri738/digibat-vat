@@ -1,710 +1,693 @@
 import React, { useState } from 'react';
+import { 
+  Building2, UserCheck, FileText, CheckCircle2, AlertTriangle, 
+  Printer, Save, FileCheck, ArrowRight, ArrowLeft, Globe, Calculator, Download 
+} from 'lucide-react';
 
-// Types
-type Lang = 'FR' | 'NL';
-type ClientStatus = 'B2C' | 'B2B_PERIODIC' | 'B2B_SPECIAL';
-type PropertyType = 'OLD_HOUSING' | 'NEW_HOUSING' | 'COMMERCIAL';
-type WorkType = 'RENOVATION' | 'DEMOLITION_RECONSTRUCTION' | 'NEW_CONSTRUCTION';
-
-interface HistoryRecord {
-  id: string;
-  date: string;
-  clientName: string;
-  vatRate: string;
-  regimeTitle: string;
-  siteAddress: string;
-}
-
-// Dictionnaire des traductions
-const translations = {
-  FR: {
-    title: 'DigiBât TVA / DigiBouw BTW',
-    subtitle: 'Détermination TVA « Travaux immobiliers » — Belgique 2025-2026',
-    badge: '✓ Conforme réformes 2025-2026',
-
-    // Étapes
-    step1Title: 'Profil du Client',
-    step1Sub: 'Contrôler le statut fiscal',
-    step2Title: 'Bien & Travaux',
-    step2Sub: 'Description des travaux',
-    step3Title: 'Résultat & Facture',
-    step3Sub: 'Verdict & mentions légales',
-
-    // Étape 1
-    step1Header: 'Étape 1 : Profil du Client',
-    clientNameLabel: 'NOM / ENTREPRISE',
-    clientNamePlaceholder: 'ex: Jean Dupont / Nom d\'entreprise',
-    countryLabel: 'PAYS (UNION EUROPÉENNE)',
-    statusLabel: 'STATUT TVA DU CLIENT',
-    statusB2C: 'Particulier (B2C - Non assujetti)',
-    statusB2BPeriodic: 'Assujetti B2B avec déclarations périodiques (Autoliquidation Art. 20 / AR n° 1)',
-    statusB2BSpecial: 'Assujetti B2B régimes spéciaux / non établi',
-    vatLabel: 'NUMÉRO DE TVA',
-    vatPlaceholder: 'ex: BE0123456789',
-    verifyVies: 'Vérifier VIES',
-    viesSuccess: '✓ Numéro TVA valide dans VIES (Assujetti)',
-    nextStep1: 'Suivant : Bien & Travaux →',
-
-    // Étape 2
-    step2Header: 'Étape 2 : Bien & Nature des Travaux',
-    propertyTypeLabel: 'TYPE ET ÂGE DU BÂTIMENT',
-    propHousingOld: 'Logement privé de plus de 10 ans (Usage d\'habitation)',
-    propHousingNew: 'Logement privé de moins de 10 ans',
-    propCommercial: 'Bâtiment commercial / à usage professionnel',
-    workTypeLabel: 'NATURE DES TRAVAUX',
-    workRenovation: 'Travaux de rénovation / transformation / entretien',
-    workDemolition: 'Démolition et reconstruction (Régime 6%)',
-    workNewConst: 'Nouvelle construction (Taux normal 21%)',
-    workAddressLabel: 'ADRESSE DU CHANTIER / BIEN',
-    workAddressPlaceholder: 'ex: Rue de la Loi 16, 1000 Bruxelles',
-    prevStep: '← Retour',
-    nextStep2: 'Suivant : Résultat & Facture →',
-
-    // Étape 3
-    step3Header: 'Étape 3 : Verdict TVA & Mention Légale Facture',
-    resultTitle: 'Régime TVA Applicable',
-    rateLabel: 'Taux de TVA à appliquer',
-    legalNoticeTitle: 'Mention Légale Obligatoire sur la Facture',
-    copyNotice: 'Copier la mention',
-    copiedNotice: '✓ Copié !',
-    amountSimulatorTitle: 'Simulateur de Facturation',
-    netAmountLabel: 'Montant HTVA (€)',
-    vatAmountLabel: 'Montant TVA (€)',
-    totalAmountLabel: 'Montant TTC (€)',
-    saveRecordBtn: '💾 Enregistrer dans l\'historique',
-    recordSaved: '✓ Enregistré !',
-
-    // Régimes fiscaux
-    regimeArt20Title: 'Autoliquidation (Article 20)',
-    regimeArt20Rate: '0% (Autoliquidation B2B)',
-    regimeArt20Desc: 'Le cocontractant (client B2B) est tenu au paiement de la TVA dans sa propre déclaration périodique.',
-    legalTextArt20: '« Autoliquidation : En l\'absence de contestation par écrit, dans un délai d\'un mois à compter de la réception de la facture, le client est présumé reconnaître qu\'il est un assujetti tenu au dépôt de déclarations périodiques. Si cette condition n\'est pas remplie, le client est responsable du paiement de la taxe, des intérêts et des amendes dus. » (AR n° 1, art. 20)',
-
-    regime6Title: 'Taux Réduit 6%',
-    regime6Rate: '6%',
-    regime6RenovDesc: 'Rénovation/transformation de logement privé de plus de 10 ans.',
-    legalText6Renov: '« Taux de TVA réduit de 6 % applicable en vertu de la rubrique XXXI du tableau A de l\'annexe à l\'arrêté royal n° 20. En l\'absence de contestation par écrit dans un délai d\'un mois à compter de la réception de la facture, le client est présumé reconnaître que le bâtiment est affecté à titre principal comme logement privé et qu\'il a été occupé pour la première fois il y a plus de 10 ans. »',
-
-    regime6DemoDesc: 'Démolition et reconstruction d\'un bâtiment d\'habitation.',
-    legalText6Demo: '« Taux de TVA réduit de 6 % pour démolition et reconstruction applicable en vertu de la rubrique XXXVII du tableau A de l\'annexe à l\'arrêté royal n° 20. »',
-
-    regime21Title: 'Taux Normal 21%',
-    regime21Rate: '21%',
-    regime21Desc: 'Bâtiment récent (<10 ans), nouvelle construction ou usage professionnel sans autoliquidation.',
-    legalText21: '« TVA 21 % - Taux normal appliqué conformément au Code de la TVA belge. »',
-
-    // Historique
-    historyTitle: 'Historique des déterminations',
-    historyEmpty: 'Aucune détermination enregistrée.',
-    clearHistory: 'Effacer l\'historique',
-  },
-  NL: {
-    title: 'DigiBât TVA / DigiBouw BTW',
-    subtitle: 'Btw-bepaling « Werken in onroerende staat » — België 2025-2026',
-    badge: '✓ Conform hervormingen 2025-2026',
-
-    // Stappen
-    step1Title: 'Klantprofiel',
-    step1Sub: 'Fiscale status controleren',
-    step2Title: 'Onroerend goed & Werken',
-    step2Sub: 'Beschrijving van de werken',
-    step3Title: 'Resultaat & Factuur',
-    step3Sub: 'Fiscaal verdict & wetteksten',
-
-    // Stap 1
-    step1Header: 'Stap 1 : Klantprofiel',
-    clientNameLabel: 'NAAM / ONDERNEMING',
-    clientNamePlaceholder: 'bv. Jan Jansen / Bedrijfsnaam',
-    countryLabel: 'LAND (EUROPESE UNIE)',
-    statusLabel: 'BTW-STATUS VAN DE KLANT',
-    statusB2C: 'Particulier (B2C - Niet-btw-plichtige)',
-    statusB2BPeriodic: 'Btw-plichtige B2B met periodieke aangiften (Btw verlegd Art. 20 / KB nr. 1)',
-    statusB2BSpecial: 'Btw-plichtige B2B bijzondere regelingen / niet gevestigd',
-    vatLabel: 'BTW-NUMMER',
-    vatPlaceholder: 'bv. BE0123456789',
-    verifyVies: 'VIES Controleren',
-    viesSuccess: '✓ Geldig btw-nummer in VIES (Btw-plichtige)',
-    nextStep1: 'Volgende: Onroerend goed & Werken →',
-
-    // Stap 2
-    step2Header: 'Stap 2 : Onroerend goed & Aard van de werken',
-    propertyTypeLabel: 'TYPE EN OUDERDOM VAN HET GEBOUW',
-    propHousingOld: 'Privéwoning ouder dan 10 jaar (Hoofdverblijf)',
-    propHousingNew: 'Privéwoning jonger dan 10 jaar',
-    propCommercial: 'Commercieel / Professioneel gebouw',
-    workTypeLabel: 'AARD VAN DE WERKEN',
-    workRenovation: 'Renovatie- / verbouwings- / onderhoudswerken',
-    workDemolition: 'Sloop en heropbouw (6% regeling)',
-    workNewConst: 'Nieuwbouw (Normaal tarief 21%)',
-    workAddressLabel: 'ADRES VAN DE WERF / GOED',
-    workAddressPlaceholder: 'bv. Wetstraat 16, 1000 Brussel',
-    prevStep: '← Terug',
-    nextStep2: 'Volgende: Resultaat & Factuur →',
-
-    // Stap 3
-    step3Header: 'Stap 3 : Btw-verdict & Verplichte Factuurvermelding',
-    resultTitle: 'Toepasselijke Btw-regeling',
-    rateLabel: 'Toe te passen btw-tarief',
-    legalNoticeTitle: 'Verplichte Vermelding op de Factuur',
-    copyNotice: 'Kopieer vermelding',
-    copiedNotice: '✓ Gekopieerd!',
-    amountSimulatorTitle: 'Facturatiesimulator',
-    netAmountLabel: 'Bedrag excl. btw (€)',
-    vatAmountLabel: 'Btw-bedrag (€)',
-    totalAmountLabel: 'Bedrag incl. btw (€)',
-    saveRecordBtn: '💾 Opslaan in historiek',
-    recordSaved: '✓ Opgeslagen!',
-
-    // Regimes
-    regimeArt20Title: 'Btw verlegd (Artikel 20)',
-    regimeArt20Rate: '0% (Btw verlegd B2B)',
-    regimeArt20Desc: 'De medecontractant (B2B-klant) is gehouden tot voldoening van de btw in zijn eigen periodieke aangifte.',
-    legalTextArt20: '« Btw verlegd: Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na ontvangst van de factuur, wordt de afnemer geacht te erkennen dat hij een btw-plichtige is die gehouden is tot het indienen van periodieke aangiften. Indien aan deze voorwaarde niet is voldaan, is de afnemer aansprakelijk voor de betaling van de belasting, intresten en geldboeten. » (KB nr. 1, art. 20)',
-
-    regime6Title: 'Verlaagd Tarief 6%',
-    regime6Rate: '6%',
-    regime6RenovDesc: 'Renovatie/ombouw van privéwoning ouder dan 10 jaar.',
-    legalText6Renov: '« Verlaagd btw-tarief van 6% van toepassing ter uitvoering van rubriek XXXI van tabel A van de bijlage bij het koninklijk besluit nr. 20. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na ontvangst van de factuur, wordt de afnemer geacht te erkennen dat het gebouw hoofdzakelijk als privéwoning wordt gebruikt en meer dan 10 jaar geleden voor het eerst in gebruik is genomen. »',
-
-    regime6DemoDesc: 'Afbraak en heropbouw van een woongebouw.',
-    legalText6Demo: '« Verlaagd btw-tarief van 6% voor afbraak en heropbouw van toepassing ter uitvoering van rubriek XXXVII van tabel A van de bijlage bij het koninklijk besluit nr. 20. »',
-
-    regime21Title: 'Normaal Tarief 21%',
-    regime21Rate: '21%',
-    regime21Desc: 'Recent gebouw (<10 jaar), nieuwbouw of professioneel gebruik zonder btw-verlegging.',
-    legalText21: '« Btw 21% - Normaal tarief toegepast overeenkomstig het Belgische Btw-Wetboek. »',
-
-    // Historiek
-    historyTitle: 'Historiek van bepalingen',
-    historyEmpty: 'Geen bepalingen geregistreerd.',
-    clearHistory: 'Historiek wissen',
-  },
-};
+// Pays membres de l'Union Européenne
+const EU_COUNTRIES = [
+  { code: 'BE', name: 'Belgique / België' },
+  { code: 'FR', name: 'France' },
+  { code: 'NL', name: 'Pays-Bas / Nederland' },
+  { code: 'DE', name: 'Allemagne / Deutschland' },
+  { code: 'LU', name: 'Luxembourg' },
+  { code: 'AT', name: 'Autriche / Österreich' },
+  { code: 'BG', name: 'Bulgarie' },
+  { code: 'CY', name: 'Chypre' },
+  { code: 'HR', name: 'Croatie' },
+  { code: 'DK', name: 'Danemark' },
+  { code: 'ES', name: 'Espagne / España' },
+  { code: 'EE', name: 'Estonie' },
+  { code: 'FI', name: 'Finlande' },
+  { code: 'GR', name: 'Grèce' },
+  { code: 'HU', name: 'Hongrie' },
+  { code: 'IE', name: 'Irlande' },
+  { code: 'IT', name: 'Italie' },
+  { code: 'LV', name: 'Lettonie' },
+  { code: 'LT', name: 'Lituanie' },
+  { code: 'MT', name: 'Malte' },
+  { code: 'PL', name: 'Pologne' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'CZ', name: 'République Tchèque' },
+  { code: 'RO', name: 'Roumanie' },
+  { code: 'SK', name: 'Slovaquie' },
+  { code: 'SI', name: 'Slovénie' },
+  { code: 'SE', name: 'Suède' }
+];
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>('FR');
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [lang, setLang] = useState<'FR' | 'NL'>('FR');
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
-  // Étape 1 : Profil Client (Champs neutres/vides par défaut)
-  const [clientName, setClientName] = useState<string>('');
-  const [country, setCountry] = useState<string>('BE');
-  const [status, setStatus] = useState<ClientStatus>('B2B_PERIODIC');
-  const [vatNumber, setVatNumber] = useState<string>('');
-  const [viesVerified, setViesVerified] = useState<boolean>(false);
+  // Étape 1 : Client
+  const [clientName, setClientName] = useState('');
+  const [clientCountry, setClientCountry] = useState('BE');
+  const [clientStatus, setClientStatus] = useState('b2b_periodic'); // b2b_periodic, b2b_special, b2c
+  const [vatNumber, setVatNumber] = useState('');
+  const [viesVerified, setViesVerified] = useState<boolean | null>(null);
 
-  // Étape 2 : Bien & Nature des travaux
-  const [propertyType, setPropertyType] = useState<PropertyType>('OLD_HOUSING');
-  const [workType, setWorkType] = useState<WorkType>('RENOVATION');
-  const [siteAddress, setSiteAddress] = useState<string>('');
+  // Étape 2 : Bien & Travaux
+  const [siteAddress, setSiteAddress] = useState('');
+  const [buildingAge, setBuildingAge] = useState<'minus_10' | 'plus_10'>('plus_10');
+  const [buildingUsage, setBuildingUsage] = useState<'privat' | 'pro' | 'mixed'>('privat');
+  const [privatePercentage, setPrivatePercentage] = useState(60);
+  const [surfaceM2, setSurfaceM2] = useState(180);
+  const [workType, setWorkType] = useState<'renovation' | 'heatpump' | 'solar' | 'demolition'>('renovation');
+  const [extWork, setExtWork] = useState<'none' | 'maintenance' | 'heavy'>('none');
 
-  // Étape 3 : Simulateur & Copie
-  const [netAmount, setNetAmount] = useState<number>(1000);
-  const [copied, setCopied] = useState<boolean>(false);
-  const [saved, setSaved] = useState<boolean>(false);
+  // Entrepreneur / Société
+  const [companyInfo, setCompanyInfo] = useState({
+    name: 'Mon Entreprise BTP BV',
+    vat: 'BE0123456789',
+    address: 'Rue du Progrès 12, 1000 Bruxelles',
+    iban: 'BE68 0000 1234 5678',
+    email: 'contact@btp-expert.be'
+  });
 
-  // Historique
-  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  // Articles Devis / Facture
+  const [items, setItems] = useState([
+    { description: 'Travaux de rénovation et finition intérieur', qty: 1, unitPrice: 5500 }
+  ]);
 
-  const t = translations[lang];
+  // Vérification VIES Factice
+  const handleVerifyVIES = () => {
+    if (vatNumber.trim().length > 5) {
+      setViesVerified(true);
+    } else {
+      setViesVerified(false);
+    }
+  };
 
-  // --- Moteur de règles fiscales TVA (Belgique 2025-2026) ---
-  const getDetermination = () => {
-    // Règle 1 : B2B avec déclarations périodiques -> Autoliquidation Art. 20
-    if (status === 'B2B_PERIODIC') {
+  // Calcul du Verdict Fiscal à l'Étape 3
+  const getVerdict = () => {
+    if (clientStatus === 'b2b_periodic') {
       return {
-        rateValue: 0,
-        rateLabel: t.regimeArt20Rate,
-        title: t.regimeArt20Title,
-        description: t.regimeArt20Desc,
-        legalNotice: t.legalTextArt20,
-        badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
+        rate: 'Autoliquidation (0%)',
+        legalText: lang === 'FR' 
+          ? "Autoliquidation : En l'absence de contestation par écrit, dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître qu'il est un assujetti tenu au dépôt de déclarations périodiques. Si cette condition n'est pas remplie, le client sera tenu au paiement de la taxe, des intérêts et des amendes dus. (Art. 20, § 3, al. 2 de l'AR n° 1)."
+          : "Btw verlegd: Bij gebrek an schriftelijke betwisting binnen een termijn van één maand na de ontvangst van de factuur, wordt de afnemer vermoed te erkennen dat hij een belastingplichtige is die gehouden is tot het indienen van periodieke aangiften. (Art. 20, § 3, lid 2 KB nr. 1).",
+        isAutoliquidation: true
       };
     }
 
-    // Règle 2 : Démolition et reconstruction -> 6%
-    if (workType === 'DEMOLITION_RECONSTRUCTION') {
+    if (extWork === 'maintenance' || extWork === 'heavy') {
       return {
-        rateValue: 6,
-        rateLabel: t.regime6Rate,
-        title: `${t.regime6Title} (${t.workDemolition})`,
-        description: t.regime6DemoDesc,
-        legalNotice: t.legalText6Demo,
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        rate: '21%',
+        legalText: lang === 'FR'
+          ? "Taux normal de 21% applicable aux travaux extérieurs et aménagement d'espaces verts (AR n° 20)."
+          : "Normaal tarief van 21% van toepassing op buitenwerken en aanleg van groenzones (KB nr. 20).",
+        isAutoliquidation: false
       };
     }
 
-    // Règle 3 : Rénovation sur logement de +10 ans -> 6%
-    if (workType === 'RENOVATION' && propertyType === 'OLD_HOUSING') {
+    if (workType === 'demolition') {
+      if (surfaceM2 <= 200) {
+        return {
+          rate: '6%',
+          legalText: lang === 'FR'
+            ? `Taux réduit de 6% applicable selon l'AR n° 20, tableau A, rubrique XXXVII (Démolition et reconstruction d'une habitation propre et unique ≤ 200 m²). Surface déclarée : ${surfaceM2} m².`
+            : `Verlaagd tarief van 6% van toepassing overeenkomstig KB nr. 20, tabel A, rubriek XXXVII (Sloop en heropbouw van enige en eigen woning ≤ 200 m²). Aangegeven oppervlakte: ${surfaceM2} m².`,
+          isAutoliquidation: false
+        };
+      } else {
+        return {
+          rate: '21%',
+          legalText: lang === 'FR'
+            ? `Taux de 21% applicable. La surface habitable (${surfaceM2} m²) dépasse le plafond légal de 200 m² pour le taux réduit de 6% en démolition/reconstruction.`
+            : `Tarief van 21% van toepassing. De bewoonbare oppervlakte (${surfaceM2} m²) overschrijdt de wettelijke grens van 200 m² voor het 6% tarief bij sloop/heropbouw.`,
+          isAutoliquidation: false
+        };
+      }
+    }
+
+    if (buildingAge === 'plus_10') {
+      if (buildingUsage === 'mixed') {
+        return {
+          rate: `Mixte : ${privatePercentage}% à 6% / ${100 - privatePercentage}% à 21%`,
+          legalText: lang === 'FR'
+            ? `Taux réduit de 6% applicable pour la partie privée (${privatePercentage}%) selon l'AR n° 20, rubrique XXXVIII. Taux normal de 21% pour la partie professionnelle (${100 - privatePercentage}%). Le client s'engage à contester par écrit dans le mois en cas d'inexactitude.`
+            : `Verlaagd tarief van 6% voor het privégedeelte (${privatePercentage}%) (KB nr. 20, rubriek XXXVIII). Normaal tarief van 21% voor het professionele gedeelte (${100 - privatePercentage}%).`,
+          isAutoliquidation: false
+        };
+      }
       return {
-        rateValue: 6,
-        rateLabel: t.regime6Rate,
-        title: `${t.regime6Title} (Rénovation > 10 ans)`,
-        description: t.regime6RenovDesc,
-        legalNotice: t.legalText6Renov,
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        rate: '6%',
+        legalText: lang === 'FR'
+          ? "Taux réduit de 6% - AR n° 20, annexe, tableau A, rubrique XXXVIII. En l'absence de contestation par écrit dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître que l'immeuble est affecté à titre privé à plus de 50% et a plus de 10 ans d'ancienneté."
+          : "Verlaagd tarief van 6% - KB nr. 20, bijlage, tabel A, rubriek XXXVIII. Bij gebrek aan schriftelijke betwisting binnen één maand, wordt de klant geacht te erkennen dat de woning ouder is dan 10 jaar en meer dan 50% privé wordt gebruikt.",
+        isAutoliquidation: false
       };
     }
 
-    // Règle 4 : Par défaut (Nouvelle construction, bâtiment récent ou B2C commercial) -> 21%
     return {
-      rateValue: 21,
-      rateLabel: t.regime21Rate,
-      title: t.regime21Title,
-      description: t.regime21Desc,
-      legalNotice: t.legalText21,
-      badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
+      rate: '21%',
+      legalText: lang === 'FR'
+        ? "Taux normal de 21% - Bâtiment de moins de 10 ans d'ancienneté."
+        : "Normaal tarief van 21% - Gebouw jonger dan 10 jaar.",
+      isAutoliquidation: false
     };
   };
 
-  const currentResult = getDetermination();
-  const vatCalculated = (netAmount * currentResult.rateValue) / 100;
-  const totalTtc = netAmount + vatCalculated;
+  const verdict = getVerdict();
 
-  const handleCopyNotice = () => {
-    navigator.clipboard.writeText(currentResult.legalNotice);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
+  // Calculs financiers
+  const totalHTVA = items.reduce((acc, item) => acc + (item.unitPrice * item.qty), 0);
+  const vatRateVal = verdict.rate.includes('6%') ? 0.06 : (verdict.rate.includes('Autoliquidation') ? 0 : 0.21);
+  const totalTVA = totalHTVA * vatRateVal;
+  const totalTTC = totalHTVA + totalTVA;
 
-  const handleSaveHistory = () => {
-    const newRecord: HistoryRecord = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString(lang === 'FR' ? 'fr-BE' : 'nl-BE'),
-      clientName: clientName.trim() || (lang === 'FR' ? 'Client anonyme' : 'Anonieme klant'),
-      vatRate: currentResult.rateLabel,
-      regimeTitle: currentResult.title,
-      siteAddress: siteAddress.trim() || '-',
-    };
+  // Export Peppol XML
+  const handleDownloadPeppol = () => {
+    const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+    <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+    <cbc:ID>INV-2026-001</cbc:ID>
+    <cbc:IssueDate>${new Date().toISOString().split('T')[0]}</cbc:IssueDate>
+    <cac:AccountingSupplierParty>
+        <cac:Party><cbc:EndpointID schemeID="0208">${companyInfo.vat}</cbc:EndpointID></cac:Party>
+    </cac:AccountingSupplierParty>
+    <cac:AccountingCustomerParty>
+        <cac:Party><cbc:EndpointID schemeID="0208">${vatNumber || 'B2C'}</cbc:EndpointID></cac:Party>
+    </cac:AccountingCustomerParty>
+    <cac:TaxTotal>
+        <cbc:TaxAmount currencyID="EUR">${totalTVA.toFixed(2)}</cbc:TaxAmount>
+    </cac:TaxTotal>
+    <cac:LegalMonetaryTotal>
+        <cbc:PayableAmount currencyID="EUR">${totalTTC.toFixed(2)}</cbc:PayableAmount>
+    </cac:LegalMonetaryTotal>
+</Invoice>`;
 
-    setHistory([newRecord, ...history]);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    const blob = new Blob([xmlContent], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Facture_PEPPOL_${clientName || 'Client'}.xml`;
+    a.click();
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-      {/* Header / En-tête */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 text-white p-2.5 rounded-xl text-xl font-bold">
-            🏢
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-8 font-sans">
+      {/* Header Bar */}
+      <header className="max-w-5xl mx-auto mb-6 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-600 text-white rounded-lg">
+            <Building2 className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{t.title}</h1>
-            <p className="text-xs text-slate-500">{t.subtitle}</p>
+            <h1 className="text-xl font-bold text-slate-900">
+              {lang === 'FR' ? 'DigiBât TVA' : 'DigiBouw BTW'}
+            </h1>
+            <p className="text-xs text-slate-500">
+              {lang === 'FR' ? 'Détermination TVA « Travaux immobiliers » — Belgique 2025-2026' : 'BTW-bepaling "Werken in onroerende staat" — België 2025-2026'}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-200">
-            {t.badge}
+        <div className="flex items-center gap-3">
+          <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-3 py-1 rounded-full border border-emerald-300">
+            ✓ Conforme réformes 2025-2026
           </span>
-
-          {/* Commutateur FR / NL */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <button
-              type="button"
+          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button 
               onClick={() => setLang('FR')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition ${
-                lang === 'FR'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
+              className={`px-3 py-1 text-xs font-bold rounded-md transition ${lang === 'FR' ? 'bg-blue-600 text-white' : 'text-slate-600'}`}>
               FR
             </button>
-            <button
-              type="button"
+            <button 
               onClick={() => setLang('NL')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition ${
-                lang === 'NL'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
+              className={`px-3 py-1 text-xs font-bold rounded-md transition ${lang === 'NL' ? 'bg-blue-600 text-white' : 'text-slate-600'}`}>
               NL
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Progress Bar Steps */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between overflow-x-auto gap-2">
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              className="flex items-center space-x-3 text-left min-w-max focus:outline-none"
-            >
-              <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  currentStep === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}
-              >
-                1
-              </span>
+      {/* Stepper Header */}
+      <div className="max-w-5xl mx-auto mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div className="flex justify-between items-center">
+          {[
+            { id: 1, name: lang === 'FR' ? 'Profil Client' : 'Klantprofiel' },
+            { id: 2, name: lang === 'FR' ? 'Bien & Travaux' : 'Goed & Werken' },
+            { id: 3, name: lang === 'FR' ? 'Résultat' : 'Resultaat' },
+            { id: 4, name: lang === 'FR' ? 'Devis' : 'Offerte' },
+            { id: 5, name: lang === 'FR' ? 'Facture' : 'Factuur' }
+          ].map((s) => (
+            <div key={s.id} className="flex items-center gap-2">
+              <button 
+                onClick={() => setStep(s.id as any)}
+                className={`w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center transition ${
+                  step === s.id ? 'bg-blue-600 text-white ring-4 ring-blue-100' : 'bg-slate-200 text-slate-600'
+                }`}>
+                {s.id}
+              </button>
+              <span className="hidden md:inline text-xs font-semibold text-slate-700">{s.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main className="max-w-5xl mx-auto">
+        {/* ÉTAPE 1 : PROFIL CLIENT */}
+        {step === 1 && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-3">
+              Étape 1 : Profil du Client / Klantprofiel
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <p className="font-bold text-sm text-slate-900">{t.step1Title}</p>
-                <p className="text-xs text-slate-400">{t.step1Sub}</p>
-              </div>
-            </button>
-
-            <div className="h-0.5 w-8 bg-slate-200 shrink-0"></div>
-
-            <button
-              type="button"
-              onClick={() => setCurrentStep(2)}
-              className="flex items-center space-x-3 text-left min-w-max focus:outline-none"
-            >
-              <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  currentStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}
-              >
-                2
-              </span>
-              <div>
-                <p className="font-bold text-sm text-slate-900">{t.step2Title}</p>
-                <p className="text-xs text-slate-400">{t.step2Sub}</p>
-              </div>
-            </button>
-
-            <div className="h-0.5 w-8 bg-slate-200 shrink-0"></div>
-
-            <button
-              type="button"
-              onClick={() => setCurrentStep(3)}
-              className="flex items-center space-x-3 text-left min-w-max focus:outline-none"
-            >
-              <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  currentStep === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}
-              >
-                3
-              </span>
-              <div>
-                <p className="font-bold text-sm text-slate-900">{t.step3Title}</p>
-                <p className="text-xs text-slate-400">{t.step3Sub}</p>
-              </div>
-            </button>
-          </div>
-
-          {/* Étape 1 : Profil Client */}
-          {currentStep === 1 && (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
-              <h2 className="text-lg font-bold text-slate-900 border-b pb-3">
-                {t.step1Header}
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                    {t.clientNameLabel}
-                  </label>
-                  <input
-                    type="text"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder={t.clientNamePlaceholder}
-                    className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                    {t.countryLabel}
-                  </label>
-                  <select
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="BE">Belgique / België (BE)</option>
-                    <option value="FR">France (FR)</option>
-                    <option value="NL">Nederland (NL)</option>
-                    <option value="DE">Deutschland (DE)</option>
-                    <option value="LU">Luxembourg (LU)</option>
-                  </select>
-                </div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nom / Entreprise</label>
+                <input 
+                  type="text"
+                  placeholder="ex: Jean Dupont / SPRL Bâtiment"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                  {t.statusLabel}
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as ClientStatus)}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                >
-                  <option value="B2C">{t.statusB2C}</option>
-                  <option value="B2B_PERIODIC">{t.statusB2BPeriodic}</option>
-                  <option value="B2B_SPECIAL">{t.statusB2BSpecial}</option>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Pays (Union Européenne)</label>
+                <select 
+                  value={clientCountry}
+                  onChange={(e) => setClientCountry(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  {EU_COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                  ))}
                 </select>
               </div>
+            </div>
 
-              {status !== 'B2C' && (
-                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase">
-                    {t.vatLabel}
-                  </label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={vatNumber}
-                      onChange={(e) => {
-                        setVatNumber(e.target.value);
-                        setViesVerified(false);
-                      }}
-                      placeholder={t.vatPlaceholder}
-                      className="flex-1 border border-slate-300 rounded-lg p-2.5 text-sm font-mono bg-white outline-none focus:ring-2 focus:ring-blue-500"
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Statut TVA du Client</label>
+              <select 
+                value={clientStatus}
+                onChange={(e) => setClientStatus(e.target.value)}
+                className="w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="b2b_periodic">Assujetti B2B avec déclarations périodiques (Autoliquidation Art. 20 / AR n° 1)</option>
+                <option value="b2b_special">Assujetti B2B régimes spéciaux / non établi</option>
+                <option value="b2c">Particulier / Client B2C (Consommateur final)</option>
+              </select>
+            </div>
+
+            {clientStatus !== 'b2c' && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                <label className="block text-xs font-bold text-blue-900 uppercase">Numéro de TVA</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    placeholder="ex: BE0123456789"
+                    value={vatNumber}
+                    onChange={(e) => setVatNumber(e.target.value)}
+                    className="flex-1 p-2.5 border rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <button 
+                    onClick={handleVerifyVIES}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition flex items-center gap-1">
+                    <Globe className="w-4 h-4" /> Vérifier VIES
+                  </button>
+                </div>
+
+                {viesVerified === true && (
+                  <p className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                    ✓ Numéro VIES Valide et actif
+                  </p>
+                )}
+                {viesVerified === false && (
+                  <p className="text-xs text-rose-600 font-bold flex items-center gap-1">
+                    ⚠ Numéro VIES non valide ou inexistant
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-4 border-t">
+              <button 
+                onClick={() => setStep(2)}
+                className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                Suivant : Bien & Travaux <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ÉTAPE 2 : BIEN & TRAVAUX */}
+        {step === 2 && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-3">
+              Étape 2 : Bien Immobilier & Travaux / Goed & Werken
+            </h2>
+
+            {/* ADRESSE DU CHANTIER */}
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <label className="block text-xs font-bold text-amber-900 uppercase mb-1">Adresse du Chantier / Bien Immobilier (Obligatoire)</label>
+              <input 
+                type="text"
+                placeholder="Rue de la Station 45, 1000 Bruxelles"
+                value={siteAddress}
+                onChange={(e) => setSiteAddress(e.target.value)}
+                className="w-full p-2.5 border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white"
+              />
+            </div>
+
+            {/* ANCIENNETÉ DU BÂTIMENT */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Ancienneté du bâtiment</label>
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  type="button"
+                  onClick={() => setBuildingAge('minus_10')}
+                  className={`p-4 border-2 rounded-xl text-left font-semibold text-sm transition ${buildingAge === 'minus_10' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-slate-200'}`}>
+                  🏢 Moins de 10 ans
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setBuildingAge('plus_10')}
+                  className={`p-4 border-2 rounded-xl text-left font-semibold text-sm transition ${buildingAge === 'plus_10' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-slate-200'}`}>
+                  🏠 Plus de 10 ans (Éligible 6%)
+                </button>
+              </div>
+            </div>
+
+            {/* USAGE DU BÂTIMENT */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Usage du bâtiment</label>
+              <div className="grid md:grid-cols-3 gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setBuildingUsage('privat')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${buildingUsage === 'privat' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🏡 Logement Privé (&gt; 50%)
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setBuildingUsage('pro')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${buildingUsage === 'pro' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🏢 Exclusivement Professionnel
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setBuildingUsage('mixed')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${buildingUsage === 'mixed' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🔀 Gemengd (Privé + Pro)
+                </button>
+              </div>
+
+              {buildingUsage === 'mixed' && (
+                <div className="mt-3 p-4 bg-slate-100 rounded-lg space-y-2">
+                  <label className="block text-xs font-bold text-slate-700">Répartition de la surface (Quote-part Privée : {privatePercentage}%)</label>
+                  <input 
+                    type="range" min="1" max="99" value={privatePercentage} 
+                    onChange={(e) => setPrivatePercentage(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-slate-600">
+                    Proportion Privée : <strong>{privatePercentage}%</strong> | Proportion Pro : <strong>{100 - privatePercentage}%</strong>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* NATURE DES TRAVAUX */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Nature des travaux principaux</label>
+              <div className="grid md:grid-cols-2 gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setWorkType('renovation')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${workType === 'renovation' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🔨 Standaard onderhoud en renovatie
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setWorkType('heatpump')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${workType === 'heatpump' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🔥 Pompes à chaleur (Warmtepomp)
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setWorkType('solar')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${workType === 'solar' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  ☀️ Panneaux solaires & Isolation
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setWorkType('demolition')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${workType === 'demolition' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🏗️ Sloop & Heropbouw (Démolition / Reconstruction)
+                </button>
+              </div>
+
+              {workType === 'demolition' && (
+                <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                  <label className="block text-xs font-bold text-blue-900">Surface totale habitable reconstruite (Règle légale des 200 m² max pour 6%)</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      value={surfaceM2}
+                      onChange={(e) => setSurfaceM2(Number(e.target.value))}
+                      className="p-2 border rounded-lg w-32 font-bold text-sm"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setViesVerified(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 rounded-lg transition"
-                    >
-                      {t.verifyVies}
-                    </button>
+                    <span className="text-sm font-semibold">m²</span>
                   </div>
-
-                  {viesVerified && (
-                    <p className="text-xs text-emerald-700 font-bold pt-1">
-                      {t.viesSuccess}
+                  {surfaceM2 > 200 && (
+                    <p className="text-xs text-rose-600 font-bold">
+                      ⚠ Attention : Dépassement des 200 m² ! Le taux passe obligatoirement à 21%.
                     </p>
                   )}
                 </div>
               )}
+            </div>
 
-              <div className="pt-4 flex justify-end">
-                <button
+            {/* TRAVAUX EXTÉRIEURS */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Travaux extérieurs / Espaces verts (Optionnel)</label>
+              <div className="grid md:grid-cols-3 gap-3">
+                <button 
                   type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-3 rounded-lg shadow transition"
-                >
-                  {t.nextStep1}
+                  onClick={() => setExtWork('none')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${extWork === 'none' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🚫 Niet van toepassing
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setExtWork('maintenance')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${extWork === 'maintenance' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🌿 Entretien courant (Tonte, haies)
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setExtWork('heavy')}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-semibold ${extWork === 'heavy' ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+                  🏗️ Aanleg & Grote werken (Terrasse)
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Étape 2 : Bien & Travaux */}
-          {currentStep === 2 && (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
-              <h2 className="text-lg font-bold text-slate-900 border-b pb-3">
-                {t.step2Header}
-              </h2>
+            <div className="flex justify-between pt-4 border-t">
+              <button 
+                onClick={() => setStep(1)}
+                className="px-4 py-2 border font-semibold text-sm rounded-lg hover:bg-slate-100 flex items-center gap-1">
+                <ArrowLeft className="w-4 h-4" /> Retour
+              </button>
+              <button 
+                onClick={() => setStep(3)}
+                className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                Voir le Verdict Fiscal <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                  {t.propertyTypeLabel}
-                </label>
-                <select
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="OLD_HOUSING">{t.propHousingOld}</option>
-                  <option value="NEW_HOUSING">{t.propHousingNew}</option>
-                  <option value="COMMERCIAL">{t.propCommercial}</option>
-                </select>
+        {/* ÉTAPE 3 : RÉSULTAT ET VERDICT FISCAL */}
+        {step === 3 && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-3">
+              Étape 3 : Résultat & Mentions Légales / Verdict & Wettekst
+            </h2>
+
+            <div className="p-6 bg-blue-50 border-2 border-blue-500 rounded-xl space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-bold text-blue-700">Taux de TVA Déterminé</span>
+                  <p className="text-3xl font-black text-blue-950 mt-1">{verdict.rate}</p>
+                </div>
+                <div className="p-2 bg-blue-600 text-white rounded-lg">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                  {t.workTypeLabel}
-                </label>
-                <select
-                  value={workType}
-                  onChange={(e) => setWorkType(e.target.value as WorkType)}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="RENOVATION">{t.workRenovation}</option>
-                  <option value="DEMOLITION_RECONSTRUCTION">{t.workDemolition}</option>
-                  <option value="NEW_CONSTRUCTION">{t.workNewConst}</option>
-                </select>
+              <div className="bg-white p-4 rounded-lg border border-blue-200">
+                <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mention Légale Obligatoire sur Facture :</span>
+                <p className="text-sm font-mono text-slate-800 leading-relaxed italic">
+                  "{verdict.legalText}"
+                </p>
               </div>
 
+              <div className="p-3 bg-amber-100 border-l-4 border-amber-500 text-amber-900 text-xs rounded">
+                <strong>Responsabilité du Client :</strong> Conformément à la réglementation fiscale belge, le client est responsable de la véracité des informations transmises concernant la destination et l'ancienneté du bien. En cas d'inexactitude, les amendes et suppléments de taxe seront à sa charge.
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-between gap-3 pt-4 border-t">
+              <button 
+                onClick={() => setStep(2)}
+                className="px-4 py-2 border font-semibold text-sm rounded-lg hover:bg-slate-100 flex items-center gap-1">
+                <ArrowLeft className="w-4 h-4" /> Modifier
+              </button>
+
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => alert('Détermination enregistrée dans le journal local !')}
+                  className="px-4 py-2.5 bg-slate-800 text-white font-bold text-sm rounded-lg hover:bg-slate-900 transition flex items-center gap-2">
+                  <Save className="w-4 h-4" /> Enregistrer
+                </button>
+                <button 
+                  onClick={() => setStep(4)}
+                  className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Convertir en Devis
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ÉTAPE 4 : MODULE DEVIS */}
+        {step === 4 && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-3 flex justify-between items-center">
+              <span>Générateur de Devis Officielles</span>
+              <span className="text-xs font-mono bg-slate-100 px-3 py-1 rounded">Devis N° DEV-2026-001</span>
+            </h2>
+
+            {/* Infos Entrepreneur */}
+            <div className="grid md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                  {t.workAddressLabel}
-                </label>
-                <input
-                  type="text"
-                  value={siteAddress}
-                  onChange={(e) => setSiteAddress(e.target.value)}
-                  placeholder={t.workAddressPlaceholder}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                <h3 className="text-xs font-bold text-slate-700 uppercase mb-2">Informations de votre Entreprise</h3>
+                <input 
+                  type="text" value={companyInfo.name} 
+                  onChange={e => setCompanyInfo({...companyInfo, name: e.target.value})}
+                  className="w-full p-2 border rounded mb-2 text-sm font-semibold"
+                />
+                <input 
+                  type="text" value={companyInfo.vat} 
+                  onChange={e => setCompanyInfo({...companyInfo, vat: e.target.value})}
+                  className="w-full p-2 border rounded text-sm font-mono"
                 />
               </div>
-
-              <div className="pt-4 flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-lg transition"
-                >
-                  {t.prevStep}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-3 rounded-lg shadow transition"
-                >
-                  {t.nextStep2}
-                </button>
+              <div>
+                <h3 className="text-xs font-bold text-slate-700 uppercase mb-2">Client & Chantier</h3>
+                <p className="text-sm font-bold text-slate-800">{clientName || 'Client Non Renseigné'}</p>
+                <p className="text-xs text-slate-600">N° TVA : {vatNumber || 'B2C / Particulier'}</p>
+                <p className="text-xs text-slate-600 mt-1">Chantier : {siteAddress || 'Adresse non communiquée'}</p>
               </div>
             </div>
-          )}
 
-          {/* Étape 3 : Verdict & Facture */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-                <div className="flex items-start justify-between border-b pb-4">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">
-                      {t.step3Header}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {clientName ? `Client : ${clientName}` : ''} {vatNumber ? `(${vatNumber})` : ''}
-                    </p>
-                  </div>
-                  <span className={`px-4 py-1.5 rounded-full text-sm font-bold border ${currentResult.badgeColor}`}>
-                    {currentResult.rateLabel}
-                  </span>
-                </div>
-
-                {/* Card Résultat principal */}
-                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-2">
-                  <h3 className="text-base font-bold text-slate-900">
-                    {currentResult.title}
-                  </h3>
-                  <p className="text-sm text-slate-600">
-                    {currentResult.description}
-                  </p>
-                </div>
-
-                {/* Mention Légale Facture */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 uppercase">
-                      {t.legalNoticeTitle}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleCopyNotice}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
-                    >
-                      {copied ? t.copiedNotice : t.copyNotice}
-                    </button>
-                  </div>
-                  <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl text-sm font-serif text-amber-900 leading-relaxed italic">
-                    {currentResult.legalNotice}
-                  </div>
-                </div>
-
-                {/* Simulateur de Montants */}
-                <div className="border-t pt-5 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-800">
-                    {t.amountSimulatorTitle}
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">
-                        {t.netAmountLabel}
-                      </label>
-                      <input
-                        type="number"
-                        value={netAmount}
-                        onChange={(e) => setNetAmount(Number(e.target.value))}
-                        className="w-full border border-slate-300 rounded-lg p-2 text-sm font-mono font-bold text-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">
-                        {t.vatAmountLabel}
-                      </label>
-                      <div className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 text-sm font-mono font-bold text-slate-600">
-                        {vatCalculated.toFixed(2)} €
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">
-                        {t.totalAmountLabel}
-                      </label>
-                      <div className="w-full border border-blue-200 bg-blue-50/50 rounded-lg p-2 text-sm font-mono font-bold text-blue-900">
-                        {totalTtc.toFixed(2)} €
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Boutons Actions Étape 3 */}
-                <div className="pt-2 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(2)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-lg transition"
-                  >
-                    {t.prevStep}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveHistory}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-2.5 rounded-lg shadow transition"
-                  >
-                    {saved ? t.recordSaved : t.saveRecordBtn}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Historique latéral */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-fit space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-              <span>📜</span>
-              <span>{t.historyTitle}</span>
-            </h3>
-            {history.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setHistory([])}
-                className="text-xs text-rose-600 hover:underline"
-              >
-                {t.clearHistory}
-              </button>
-            )}
-          </div>
-
-          {history.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-xs text-slate-400 italic">{t.historyEmpty}</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {history.map((rec) => (
-                <div
-                  key={rec.id}
-                  className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1"
-                >
-                  <div className="flex justify-between font-bold text-slate-800">
-                    <span>{rec.clientName}</span>
-                    <span className="text-blue-600">{rec.vatRate}</span>
-                  </div>
-                  <p className="text-slate-500">{rec.regimeTitle}</p>
-                  <p className="text-[10px] text-slate-400">{rec.date} • {rec.siteAddress}</p>
+            {/* Articles du devis */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-700 uppercase mb-2">Lignes du devis</h3>
+              {items.map((item, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <input 
+                    type="text" value={item.description}
+                    onChange={e => {
+                      const newItems = [...items];
+                      newItems[idx].description = e.target.value;
+                      setItems(newItems);
+                    }}
+                    className="flex-1 p-2 border rounded text-sm"
+                  />
+                  <input 
+                    type="number" value={item.unitPrice}
+                    onChange={e => {
+                      const newItems = [...items];
+                      newItems[idx].unitPrice = Number(e.target.value);
+                      setItems(newItems);
+                    }}
+                    className="w-28 p-2 border rounded text-sm font-bold text-right"
+                  />
                 </div>
               ))}
             </div>
-          )}
-        </div>
+
+            {/* Total et TVA */}
+            <div className="p-4 bg-slate-900 text-white rounded-lg flex justify-between items-center">
+              <div>
+                <p className="text-xs text-slate-400">Taux appliqué selon verdict :</p>
+                <p className="text-sm font-bold text-emerald-400">{verdict.rate}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Total HTVA : {totalHTVA.toFixed(2)} €</p>
+                <p className="text-xl font-black">Total TTC : {totalTTC.toFixed(2)} €</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-between gap-2 pt-4 border-t">
+              <button onClick={() => setStep(3)} className="px-4 py-2 border text-sm rounded-lg">Retour</button>
+              <div className="flex gap-2">
+                <button onClick={() => window.print()} className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg flex items-center gap-1">
+                  <Printer className="w-4 h-4" /> Imprimer / PDF
+                </button>
+                <button onClick={() => setStep(5)} className="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg flex items-center gap-1">
+                  Convertir en Facture <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ÉTAPE 5 : MODULE FACTURE & PEPPOL */}
+        {step === 5 && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-3 flex justify-between items-center">
+              <span>Facture Finale Conforme</span>
+              <span className="text-xs font-mono bg-emerald-100 text-emerald-800 px-3 py-1 rounded font-bold">FACT-2026-001</span>
+            </h2>
+
+            <div className="p-4 border border-slate-200 rounded-lg space-y-3">
+              <div className="flex justify-between border-b pb-3">
+                <div>
+                  <p className="font-bold text-slate-900">{companyInfo.name}</p>
+                  <p className="text-xs text-slate-500">{companyInfo.vat}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-slate-900">{clientName}</p>
+                  <p className="text-xs text-slate-500">{vatNumber}</p>
+                </div>
+              </div>
+
+              <div className="text-xs font-mono bg-slate-50 p-3 rounded">
+                <strong>Mention légale fiscale obligatoire :</strong>
+                <p className="mt-1 italic">{verdict.legalText}</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex justify-between items-center">
+              <div>
+                <p className="text-xs text-emerald-800 font-bold">Montant total à payer TTC :</p>
+                <p className="text-2xl font-black text-emerald-950">{totalTTC.toFixed(2)} €</p>
+              </div>
+              <span className="text-xs bg-emerald-600 text-white px-3 py-1 rounded-full font-bold">Prêt pour envoi</span>
+            </div>
+
+            <div className="flex flex-wrap justify-between gap-2 pt-4 border-t">
+              <button onClick={() => setStep(4)} className="px-4 py-2 border text-sm rounded-lg">Retour au Devis</button>
+              
+              <div className="flex gap-2">
+                <button onClick={() => window.print()} className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg flex items-center gap-1">
+                  <Printer className="w-4 h-4" /> Imprimer / PDF
+                </button>
+                <button onClick={handleDownloadPeppol} className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg flex items-center gap-1 hover:bg-indigo-700">
+                  <Download className="w-4 h-4" /> Transférer via Peppol (XML)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
