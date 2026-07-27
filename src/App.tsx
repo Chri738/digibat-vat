@@ -1,68 +1,71 @@
-Actue en tant qu'développeur Senior React / TypeScript expert en législation fiscale belge (TVA Bâtiment & Peppol). 
+Actue en tant que Développeur Senior React / TypeScript expert en fiscalité belge (TVA Construction, e-invoicing & Peppol).
 
-Nous travaillons sur l'application "DigiBât TVA / DigiBouw BTW" (fichier principal : src/App.tsx). 
-Voici le cahier des charges des modifications à implémenter étape par étape :
-
----
-
-### 🟢 Étape 1 : Profil du Client (Mise à jour)
-1. **Liste des pays UE** : Mettre à jour le champ `<select>` du pays pour inclure la liste complète des 27 pays membres de l'Union Européenne (avec leurs codes ISO à 2 lettres pour la validation VIES).
-2. Maintenir la vérification VIES existante et le support bilingue (FR/NL).
+L'objectif est d'effectuer une refonte précise du fichier principal `src/App.tsx` (et des composants associés) de l'application "DigiBât VAT / DigiBouw BTW" en respectant rigoureusement les 5 points ci-dessous.
 
 ---
 
-### 🔵 Étape 2 : Bien & Travaux (Mise à jour UI & Champs)
-1. **Adresse du chantier / bien** : 
-   - Ajouter une section obligatoire "Adresse du chantier" (Rue, Numéro, Code Postal, Ville).
-2. **Gestion de l'Usage Mixte & Règle des 200 m²** :
-   - Si l'option "Gemengd (privé + pro)" / "Usage mixte" est sélectionnée dans l'usage du bâtiment :
-     - Afficher un champ de saisie de la surface totale de construction.
-     - Ajouter une règle de répartition obligatoire : Permettre de ventiler la surface (Privé vs Pro) avec une contrainte/validation précisant que la surface minimale de construction à ventiler est de **200 m²**.
-     - Calculer automatiquement le prorata de répartition.
+### 1. Étape 1 : Profil Client (Clean State & Pays UE)
+- **Champs vides par défaut** : Supprimer toute valeur initiale préremplie pour le Nom/Entreprise et le Numéro de TVA (définir les states à `""`). Conserver uniquement les textes d'exemples en `placeholder`.
+- **Liste déroulante des pays** : Intégrer l'ensemble des 27 pays membres de l'Union Européenne dans le menu déroulant "LAND / PAYS" (avec leurs codes ISO 2 lettres pour la validation VIES : BE, FR, NL, DE, LU, IT, ES, PT, PL, etc.).
+- Conserver le bouton de validation VIES ("VIES Controleren" / "Vérifier VIES") et le support bilingue FR/NL.
 
 ---
 
-### 🟣 Étape 3 : Résultat & Legal Disclaimer
-1. **Citations textuelles précises des textes de lois** (support FR/NL) :
-   - **Régime B2B (Autoliquidation)** :
-     - FR : *"Autoliquidation : Réduction/absence de TVA en vertu de l'Article 20 de l'Arrêté Royal n° 1. La TVA est à acquitter par le cocontractant."*
-     - NL : *"B2B Verlegging van heffing volgens Art. 20 KB nr. 1. BTW te voldoen door de medecontractant."*
-   - **Régime B2C (Taux réduit 6% / 21%)** :
-     - Préciser la référence exacte selon l'ancienneté (> 10 ans : Rubrique XXXVIII du tableau A de l'AR n° 20).
-   - **Travaux mixtes (Séparation des taux)** :
-     - En cas d'usage mixte, afficher un tableau explicatif détaillant la ventilation du taux de TVA appliqué à la partie privée (ex: 6%) et à la partie professionnelle (ex: 21% ou autoliquidation Art. 20).
-2. **Clause de Responsabilité Fiscale** :
-   - Ajouter un encadré d'avertissement légal précisant : *"L'entrepreneur et le client sont tenus de vérifier l'exactitude des déclarations d'affectation du bâtiment. En cas de fausse déclaration, la responsabilité fiscale incombe au client conformément à la réglementation en vigueur."*
-3. **Actions / Boutons** :
-   - Activer le bouton **"Enregistrer la détermination"**.
-   - Activer le bouton **"Convertir en devis"** qui redirige vers le module Devis.
+### 2. Étape 2 : Bien & Travaux (Adresse & Options complètes)
+- **Nouveau champ obligatoire** : Ajouter un champ de saisie "ADRESSE DU CHANTIER / BIEN" (Rue, Numéro, Code postal, Ville).
+- **Réintégration stricte de TOUTES les options de la nature des travaux** :
+  * **Nature des travaux / Aard van de werken** :
+    1. 🔨 `Standaard onderhoud en renovatie` / `Entretien standard et rénovation`
+    2. 🔥 `Warmtepomp` / `Pompe à chaleur`
+    3. ☀️ `Zonnepanelen & Isolatie` / `Panneaux solaires & Isolation`
+    4. 🏗️ `Sloop & Heropbouw` / `Démolition & Reconstruction`
+  * **Travaux extérieurs / Espaces verts (Optionnel / Buitenwerken)** :
+    1. 🚫 `Niet van toepassing` / `Non applicable`
+    2. 🌿 `Lopend onderhoud (Gras maaien, hagen scheren...)` / `Entretien courant`
+    3. 🏗️ `Aanleg & Grote werken (Terras, bestrating, drainage...)` / `Aménagement & Grands travaux`
 
 ---
 
-### 📄 Module Devis (Nouveau / Extension)
-1. **Profil de l'entreprise (Prestataire)** :
-   - Permettre à l'entrepreneur de renseigner ou modifier ses coordonnées (Nom entreprise, Adresse, N° TVA, IBAN, BIC, Email).
-2. **Lignes de devis & Calculs** :
-   - Permettre la saisie des prestations (Description, Quantité, Prix unitaire HTVA).
-   - **Automatisme TVA** : Le taux de TVA applicable par ligne doit être **automatiquement verrouillé/pré-rempli** selon le verdict obtenu à l'Étape 3 (ex: 0% Autoliquidation Art. 20, 6%, 21%, ou mixte).
-3. **Boutons d'action du Devis** :
-   - `Enregistrer le devis` (dans l'historique/state).
-   - `Imprimer / Exporter PDF` (mise en page propre du devis).
-   - `Convertir en facture` (transfère toutes les données vers la facture).
+### 3. Étape 3 : Précision Juridique Maximale (Verdict & Mentions légales)
+Afficher le résultat exact selon le profil déterminé, avec les textes de loi textuels stricts (support FR/NL) :
+
+- **Cas B2B Assujetti (Autoliquidation / Btw verlegd)** :
+  * Titre : `✓ Autoliquidation — Régime Cocontractant` | Badge : `0% (Autoliquidation / Btw verlegd)`
+  * **Texte obligatoire légal à insérer sur la facture** :
+    > "Autoliquidation : En l'absence de contestation par écrit dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître qu'il est un assujetti tenu au dépôt de déclarations périodiques (Art. 20 de l'Arrêté Royal n° 1)."
+    *(En NL: "Btw verlegd: Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na de ontvangst van de factuur, wordt de afnemer geacht te erkennen dat hij een belastingplichtige is die gehouden is tot het indienen van periodieke aangiften (Art. 20 KB nr. 1).")*
+
+- **Cas B2C Privé (> 10 ans)** :
+  * Application du taux de **6%**.
+  * Référence légale obligatoire : `Rubrique XXXVIII du tableau A de l'Arrêté Royal n° 20 relatif aux taux de TVA`.
+
+- **Cas Usage mixte (Privé + Pro)** :
+  * Encadré d'avertissement jaune/orange :
+    > "⚠️ Traitement des travaux mixtes (Privé + Pro) : En cas d'usage mixte, une ventilation obligatoire des montants doit être effectuée (séparation au prorata : quotité privée à 6% / quotité professionnelle à 21% ou autoliquidation Art. 20)."
 
 ---
 
-### 🧾 Module Facture (Nouveau / Extension)
-1. **Reprise des données** :
-   - Importer automatiquement toutes les données issues du devis (Données client, Chantier, Mentions légales de l'Étape 3, Lignes de prix, Taux de TVA).
-2. **Boutons d'action de la Facture** :
-   - `Enregistrer la facture`.
-   - `Imprimer / Exporter la facture PDF`.
-   - `Transférer via Peppol` (Ajouter un bouton fonctionnel avec simulation/modal d'envoi au réseau e-invoicing Peppol au format UBL/e-FFF).
+### 4. Espace Devis (Dynamique & Personnalisable)
+Ajouter la vue/module Devis accessible depuis l'Étape 3 :
+- **Profil Entreprise Prestataire** : Champs éditables pour l'entrepreneur (Nom société, N° TVA, Adresse, IBAN, BIC).
+- **Lignes de prestations** : Table dynamique permettant d'ajouter/supprimer/éditer des lignes (Description, Quantité, Prix unitaire HTVA).
+- **Automatisme TVA** : Le taux de TVA sur chaque ligne s'applique **automatiquement** selon le verdict légal obtenu à l'Étape 3.
+- **Boutons d'action** :
+  * 💾 `Enregistrer le devis` (sauvegarde dans l'historique local)
+  * 🖨️ `Imprimer le devis` (mise en page d'impression / PDF clean)
+  * ⚡ `Convertir en facture` (bascule toutes les données vers le module Facture)
 
 ---
 
-### 🛠️ Consignes Techniques
-- Conserver le design Tailwind CSS propre existant (cartes, badges, boutons d'action).
-- Assurer la gestion d'état (State React) pour passer de manière fluide de l'Étape 3 au Devis, puis du Devis à la Facture.
-- Conserver le support bilingue parfait (FR/NL) pour tous les nouveaux éléments.
+### 5. Espace Facture complet & Intégration Peppol
+- **Reprise automatique** : Récupération intégrale des données du devis, des coordonnées de l'entrepreneur, du client, de l'adresse du chantier et de la mention légale d'Étape 3.
+- **Boutons d'action** :
+  * 💾 `Enregistrer la facture`
+  * 🖨️ `Imprimer la facture`
+  * 🌐 `Transférer via Peppol` : Déclencher une modale de confirmation simulant la transmission au réseau Peppol (format UBL / e-FFF) avec un message de succès confirmant l'envoi.
+
+---
+
+### 🎨 Instructions UI & Code
+- Conserver scrupuleusement la charte graphique existante (Tailwind CSS, cartes blanches à bordures arrondies, boutons bleus `#2563eb`, typographie propre).
+- S'assurer de la bonne gestion des états React (`useState`) pour la fluidité entre les 3 étapes, le Devis et la Facture.
