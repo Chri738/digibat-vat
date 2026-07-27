@@ -24,6 +24,7 @@ interface QuoteLineItem {
   unitPrice: number;
 }
 
+// Liste complète des 27 pays de l'Union Européenne
 const EU_COUNTRIES = [
   'Belgique / België (BE)',
   'France (FR)',
@@ -71,6 +72,7 @@ export default function App() {
   const [clientStatus, setClientStatus] = useState<ClientStatus>('B2B_PERIODIC');
   const [vatNumber, setVatNumber] = useState('');
   
+  // États pour la vérification VIES
   const [isViesVerified, setIsViesVerified] = useState<boolean>(false);
   const [viesLoading, setViesLoading] = useState<boolean>(false);
   const [viesError, setViesError] = useState<string | null>(null);
@@ -81,11 +83,12 @@ export default function App() {
   const [workNature, setWorkNature] = useState<WorkNature>('RENOVATION');
   const [outdoorWork, setOutdoorWork] = useState<OutdoorWork>('NONE');
 
+  // Surfaces pour l'option Mixte (Min. 200 m²)
   const [totalSurface, setTotalSurface] = useState<number>(200);
   const [privateSurface, setPrivateSurface] = useState<number>(120);
   const [proSurface, setProSurface] = useState<number>(80);
 
-  // --- 4. Lignes de Prestation ---
+  // --- 4. Lignes de Prestation (Devis & Facture) ---
   const [quoteItems, setQuoteItems] = useState<QuoteLineItem[]>([
     {
       id: '1',
@@ -99,12 +102,14 @@ export default function App() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Handler réinitialisation VIES quand le numéro TVA change
   const handleVatChange = (val: string) => {
     setVatNumber(val);
     setIsViesVerified(false);
     setViesError(null);
   };
 
+  // Simuler la vérification VIES officielle
   const handleViesCheck = () => {
     setViesError(null);
     if (!vatNumber || vatNumber.trim().length < 8) {
@@ -129,6 +134,7 @@ export default function App() {
     }, 700);
   };
 
+  // Calcul du verdict fiscal
   const getTaxVerdict = () => {
     if (clientStatus === 'B2B_PERIODIC') {
       return {
@@ -170,6 +176,7 @@ export default function App() {
 
   const currentVerdict = getTaxVerdict();
 
+  // Gestion des lignes de devis
   const handleAddItem = () => {
     setQuoteItems([
       ...quoteItems,
@@ -185,6 +192,7 @@ export default function App() {
     setQuoteItems(quoteItems.filter(item => item.id !== id));
   };
 
+  // Calculs totaux
   const subtotal = quoteItems.reduce((acc, item) => acc + (item.qty * item.unitPrice), 0);
   const vatAmount = currentVerdict.isAutoliquidation ? 0 : (subtotal * currentVerdict.rate) / 100;
   const totalTtc = subtotal + vatAmount;
@@ -194,21 +202,11 @@ export default function App() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  // Calcul des ratios de surface pour usage mixte
   const privateRatio = totalSurface > 0 ? Math.round((privateSurface / totalSurface) * 100) : 0;
   const proRatio = totalSurface > 0 ? Math.round((proSurface / totalSurface) * 100) : 0;
 
-  const handleSaveHistory = () => {
-    const newItem: HistoryItem = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString(),
-      clientName: clientName || 'Client',
-      vatRate: currentVerdict.rateLabel,
-      workNatureLabel: workNature
-    };
-    setHistory([newItem, ...history]);
-    showToast(lang === 'FR' ? 'Détermination enregistrée dans l\'historique !' : 'Bepaling opgeslagen in historiek!');
-  };
-
+  // Traduction des libellés
   const t = {
     FR: {
       appName: 'DigiBât VAT / DigiBouw BTW',
@@ -223,6 +221,7 @@ export default function App() {
       historyTitle: 'Historique des déterminations',
       historyEmpty: 'Aucune détermination enregistrée.',
       
+      // Step 1
       step1Header: 'Étape 1 : Profil du Client',
       nameLabel: 'NOM / ENTREPRISE',
       countryLabel: 'PAYS (UNION EUROPÉENNE)',
@@ -235,16 +234,18 @@ export default function App() {
       viesVerifiedBadge: '✓ Assujetti contrôlé VIES',
       viesWarningMessage: '⚠️ La vérification VIES du numéro de TVA est obligatoire pour les clients B2B avant d\'accéder à l\'Étape 2.',
       
+      // Step 2
       step2Header: 'Bien immobilier & Travaux',
-      step2Sub: 'Décrivez le bien et la nature des travaux.',
+      step2Sub: 'Beschrijf het goed en de aard van de werken.',
       ageLabel: 'Ancienneté du bâtiment',
       ageLess10: 'Moins de 10 ans',
       ageMore10: 'Plus de 10 ans',
       usageLabel: 'Usage du bâtiment',
       usagePrivate: 'Plus de 50% privé',
       usageProExcl: 'Exclusivement professionnel',
-      usageMixed: 'Usage mixte (privé + pro)',
+      usageMixed: 'Gemengd (privé + pro)',
       
+      // Mixed Surface section
       mixedTitle: 'Ventilation des surfaces (Usage mixte - Min. 200 m²)',
       totalSurfaceLabel: 'Surface totale (m² min. 200) :',
       privateSurfaceLabel: 'Surface Privée (m²) :',
@@ -254,30 +255,33 @@ export default function App() {
       mixedLawBody: 'Conformément à la réglementation TVA belge, la répartition de la surface (min. 200 m²) sert de clé de ventilation directe. La quotité de surface privée bénéficie du taux réduit de 6% (si le bâtiment a plus de 10 ans), tandis que la quotité professionnelle est facturée au taux normal de 21% (ou en autoliquidation Art. 20 KB1 pour les assujettis B2B).',
 
       workNatureLabel: 'Nature des travaux',
-      workRenovation: 'Rénovation & entretien standard',
-      workHeatPump: 'Pompe à chaleur',
-      workSolar: 'Panneaux solaires & Isolation',
-      workDemolition: 'Démolition & Reconstitution',
+      workRenovation: 'Standaard onderhoud en renovatie',
+      workHeatPump: 'Warmtepomp',
+      workSolar: 'Zonnepanelen & Isolatie',
+      workDemolition: 'Sloop & Heropbouw',
       outdoorLabel: 'Travaux extérieurs / Espaces verts (optionnel)',
       outdoorOption: 'OPTIONNEL',
-      outdoorSub: 'Cochez uniquement si le service concerne l\'entretien ou l\'aménagement d\'espaces verts.',
-      outdoorNone: 'Non applicable',
-      outdoorMaint: 'Entretien courant (Tonte, taille...)',
-      outdoorLandscaping: 'Aménagement & Gros travaux (Terrasse, pavage...)',
+      outdoorSub: 'Vink alleen aan als de dienst betrekking heeft op het onderhoud of de aanleg van groenzones.',
+      outdoorNone: 'Niet van toepassing',
+      outdoorMaint: 'Lopend onderhoud\n(Gras maaien, hagen scheren...)',
+      outdoorLandscaping: 'Aanleg & Grote werken\n(Terras, bestrating...)',
       
-      backBtn: '← Retour',
-      nextToStep2: 'Suivant : Bien & Travaux →',
-      viewVerdictBtn: 'Voir le verdict →',
+      backBtn: '← Terug',
+      nextToStep2: 'Volgende: Onroerend goed & Werken →',
+      viewVerdictBtn: 'Verdict bekijken →',
 
-      step3Header: 'Résultat & Facture',
+      // Step 3
+      step3Header: 'Resultaat & Facture',
       saveBtn: '💾 Enregistrer',
-      transferDevisBtn: '📄 Transférer vers le devis →',
+      transferDevisBtn: '📄 Overdragen naar offerte →',
       mixedWarningTitle: '⚠️ Traitement des travaux mixtes (Privé + Pro) :',
       mixedWarningBody: 'En cas d\'usage mixte chez un client B2C, le taux réduit de 6% s\'lique uniquement sur la quotité privée calculée. La partie professionnelle doit être facturée séparément au taux normal de 21%. Si le client est B2B (Art. 20 KB1), l\'autoliquidation s\'applique sur la totalité.',
 
+      // Provider
       providerSectionTitle: 'Prestataire / Entrepreneur',
       clientSectionTitle: 'Client',
       
+      // Devis / Facture
       quoteTitle: 'Devis',
       invoiceTitle: 'Facture',
       quoteNum: 'Devis N° : DEV-2026-001',
@@ -288,6 +292,7 @@ export default function App() {
       totalLabel: 'TOTAL TTC',
       legalNoticeTitle: 'Mention légale obligatoire à faire figurer sur le document :',
       
+      // Actions
       saveQuoteBtn: '💾 Enregistrer le devis',
       printQuoteBtn: '🖨️ Imprimer / PDF',
       convertToInvoiceBtn: '⚡ Convertir en facture →',
@@ -308,6 +313,7 @@ export default function App() {
       historyTitle: 'Historiek van bepalingen',
       historyEmpty: 'Geen bepalingen geregistreerd.',
       
+      // Step 1
       step1Header: 'Stap 1 : Klantprofiel',
       nameLabel: 'NAAM / ONDERNEMING',
       countryLabel: 'LAND (EUROPESE UNIE)',
@@ -320,6 +326,7 @@ export default function App() {
       viesVerifiedBadge: '✓ Btw-plichtige gecontroleerd in VIES',
       viesWarningMessage: '⚠️ Een verplichte VIES-controle van het btw-nummer is vereist voor B2B-klanten alvorens naar Stap 2 te gaan.',
       
+      // Step 2
       step2Header: 'Onroerend goed & Werken',
       step2Sub: 'Beschrijf het goed en de aard van de werken.',
       ageLabel: 'Ouderdom van het gebouw',
@@ -330,6 +337,7 @@ export default function App() {
       usageProExcl: 'Uitsluitend professioneel',
       usageMixed: 'Gemengd (privé + pro)',
       
+      // Mixed Surface section
       mixedTitle: 'Oppervlakteverdeling (Gemengd gebruik - Min. 200 m²)',
       totalSurfaceLabel: 'Totale oppervlakte (m² min. 200) :',
       privateSurfaceLabel: 'Privéoppervlakte (m²) :',
@@ -347,22 +355,25 @@ export default function App() {
       outdoorOption: 'OPTIONEEL',
       outdoorSub: 'Vink alleen aan als de dienst betrekking heeft op het onderhoud of de aanleg van groenzones (tuin, terras, bestrating...).',
       outdoorNone: 'Niet van toepassing',
-      outdoorMaint: 'Lopend onderhoud (Gras maaien, hagen scheren...)',
-      outdoorLandscaping: 'Aanleg & Grote werken (Terras, bestrating...)',
+      outdoorMaint: 'Lopend onderhoud\n(Gras maaien, hagen scheren, verzorging planten...)',
+      outdoorLandscaping: 'Aanleg & Grote werken\n(Terras, bestrating, drainage, bomen kappen...)',
       
       backBtn: '← Terug',
       nextToStep2: 'Volgende: Onroerend goed & Werken →',
       viewVerdictBtn: 'Verdict bekijken →',
 
+      // Step 3
       step3Header: 'Resultaat & Factuur',
       saveBtn: '💾 Opslaan',
       transferDevisBtn: '📄 Overdragen naar offerte →',
       mixedWarningTitle: '⚠️ Behandeling van gemengde werken (Privé + Pro):',
       mixedWarningBody: 'Bij gemengd gebruik bij een B2C-klant geldt het verlaagde tarief van 6% uitsluitend voor het berekende privégedeelte. Het professionele gedeelte moet afzonderlijk worden gefactureerd aan 21%. Indien de klant B2B is (Art. 20 KB1), geldt de verlegging van heffing op het gehele bedrag.',
 
+      // Provider
       providerSectionTitle: 'Dienstverlener / Aannemer',
       clientSectionTitle: 'Klant',
 
+      // Devis / Facture
       quoteTitle: 'Offerte',
       invoiceTitle: 'Factuur',
       quoteNum: 'Offerte Nr. : OFF-2026-001',
@@ -373,6 +384,7 @@ export default function App() {
       totalLabel: 'TOTAAL INCL. BTW',
       legalNoticeTitle: 'Verplichte wettelijke vermelding op het document :',
 
+      // Actions
       saveQuoteBtn: '💾 Offerte opslaan',
       printQuoteBtn: '🖨️ Afdrukken / PDF',
       convertToInvoiceBtn: '⚡ Omzetten naar factuur →',
@@ -386,7 +398,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-12">
-      {/* Header */}
+      {/* En-tête principal */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl font-bold shadow-md">
@@ -423,7 +435,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Toast */}
+      {/* Notification Toast */}
       {notification && (
         <div className="fixed top-20 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-semibold z-50 animate-bounce">
           {notification}
@@ -431,10 +443,13 @@ export default function App() {
       )}
 
       <main className="max-w-7xl mx-auto px-6 pt-6">
+        
+        {/* --- VUE CALCULATEUR --- */}
         {viewMode === 'CALCULATOR' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* Stepper */}
+              
+              {/* Stepper Navigation */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div 
                   onClick={() => setCurrentStep(1)}
@@ -486,7 +501,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* STEP 1 */}
+              {/* ÉTAPE 1 : PROFIL CLIENT (AVEC VIES MANDATOIRE) */}
               {currentStep === 1 && (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                   <h2 className="text-lg font-bold text-slate-900">{currentT.step1Header}</h2>
@@ -595,7 +610,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* STEP 2 */}
+              {/* ÉTAPE 2 : BIEN, TRAVAUX & SURFACES (USAGE MIXTE) */}
               {currentStep === 2 && (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                   <div>
@@ -603,7 +618,7 @@ export default function App() {
                     <p className="text-xs text-slate-500">{currentT.step2Sub}</p>
                   </div>
 
-                  {/* Age */}
+                  {/* Ouderdom / Ancienneté */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-2">{currentT.ageLabel}</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -626,7 +641,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Usage */}
+                  {/* Gebruik / Usage */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-2">{currentT.usageLabel}</label>
                     <div className="grid grid-cols-3 gap-3">
@@ -652,88 +667,159 @@ export default function App() {
                           buildingUsage === 'MIXED' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 hover:border-slate-300 text-slate-700'
                         }`}
                       >
-                        <span>🏛️</span> <span>{currentT.usageMixed}</span>
+                        <span>🧱</span> <span>{currentT.usageMixed}</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Mixed details */}
+                  {/* SECTION SURFACES SI OPTION MIXTE SELECTIONNEE */}
                   {buildingUsage === 'MIXED' && (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                      <h3 className="text-xs font-bold text-slate-800">{currentT.mixedTitle}</h3>
-                      <div className="grid grid-cols-3 gap-3">
+                    <div className="p-5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-4">
+                      <div className="flex items-center justify-between border-b border-blue-200 pb-2">
+                        <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wide flex items-center gap-2">
+                          <span>📐</span> {currentT.mixedTitle}
+                        </h3>
+                        <span className="text-xs font-extrabold bg-blue-600 text-white px-2.5 py-0.5 rounded">
+                          Privé {privateRatio}% / Pro {proRatio}%
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-[11px] text-slate-600 font-semibold mb-1">{currentT.totalSurfaceLabel}</label>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">{currentT.totalSurfaceLabel}</label>
                           <input 
                             type="number" 
-                            value={totalSurface} 
-                            onChange={(e) => setTotalSurface(Number(e.target.value))}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs"
+                            min="200"
+                            value={totalSurface}
+                            onChange={(e) => {
+                              const val = Math.max(1, parseFloat(e.target.value) || 0);
+                              setTotalSurface(val);
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                           />
                         </div>
+
                         <div>
-                          <label className="block text-[11px] text-slate-600 font-semibold mb-1">{currentT.privateSurfaceLabel}</label>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">{currentT.privateSurfaceLabel}</label>
                           <input 
                             type="number" 
-                            value={privateSurface} 
-                            onChange={(e) => setPrivateSurface(Number(e.target.value))}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs"
+                            value={privateSurface}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseFloat(e.target.value) || 0);
+                              setPrivateSurface(val);
+                              setProSurface(Math.max(0, totalSurface - val));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-emerald-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                           />
                         </div>
+
                         <div>
-                          <label className="block text-[11px] text-slate-600 font-semibold mb-1">{currentT.proSurfaceLabel}</label>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">{currentT.proSurfaceLabel}</label>
                           <input 
                             type="number" 
-                            value={proSurface} 
-                            onChange={(e) => setProSurface(Number(e.target.value))}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs"
+                            value={proSurface}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseFloat(e.target.value) || 0);
+                              setProSurface(val);
+                              setPrivateSurface(Math.max(0, totalSurface - val));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-blue-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                           />
                         </div>
                       </div>
-                      <div className="text-xs text-slate-600 space-y-1">
-                        <p><strong>Privé:</strong> {privateRatio}% | <strong>Pro:</strong> {proRatio}%</p>
-                        <p className="text-[11px] text-amber-700">{currentT.surfaceWarning}</p>
+
+                      {totalSurface < 200 && (
+                        <p className="text-[11px] text-amber-700 font-semibold italic">
+                          ⚠️ {currentT.surfaceWarning}
+                        </p>
+                      )}
+
+                      <div className="p-3 bg-white rounded-lg border border-blue-100 text-[11px] space-y-1 text-slate-700">
+                        <p className="font-bold text-blue-900">{currentT.mixedLawTitle}</p>
+                        <p className="leading-relaxed">{currentT.mixedLawBody}</p>
                       </div>
                     </div>
                   )}
 
-                  {/* Work Nature */}
+                  {/* Nature des travaux */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-2">{currentT.workNatureLabel}</label>
-                    <select 
-                      value={workNature}
-                      onChange={(e) => setWorkNature(e.target.value as WorkNature)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="RENOVATION">{currentT.workRenovation}</option>
-                      <option value="HEAT_PUMP">{currentT.workHeatPump}</option>
-                      <option value="SOLAR_INSULATION">{currentT.workSolar}</option>
-                      <option value="DEMOLITION_RECONSTRUCTION">{currentT.workDemolition}</option>
-                    </select>
-                  </div>
-
-                  {/* Outdoor work */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-slate-700">{currentT.outdoorLabel}</label>
-                      <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded">{currentT.outdoorOption}</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setWorkNature('RENOVATION')}
+                        className={`p-3 rounded-xl border text-left text-xs font-semibold flex items-center space-x-2 transition-all ${
+                          workNature === 'RENOVATION' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        <span>🔨</span> <span>{currentT.workRenovation}</span>
+                      </button>
+                      <button
+                        onClick={() => setWorkNature('HEAT_PUMP')}
+                        className={`p-3 rounded-xl border text-left text-xs font-semibold flex items-center space-x-2 transition-all ${
+                          workNature === 'HEAT_PUMP' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        <span>🔥</span> <span>{currentT.workHeatPump}</span>
+                      </button>
+                      <button
+                        onClick={() => setWorkNature('SOLAR_INSULATION')}
+                        className={`p-3 rounded-xl border text-left text-xs font-semibold flex items-center space-x-2 transition-all ${
+                          workNature === 'SOLAR_INSULATION' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        <span>☀️</span> <span>{currentT.workSolar}</span>
+                      </button>
+                      <button
+                        onClick={() => setWorkNature('DEMOLITION_RECONSTRUCTION')}
+                        className={`p-3 rounded-xl border text-left text-xs font-semibold flex items-center space-x-2 transition-all ${
+                          workNature === 'DEMOLITION_RECONSTRUCTION' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        <span>🏗️</span> <span>{currentT.workDemolition}</span>
+                      </button>
                     </div>
-                    <select 
-                      value={outdoorWork}
-                      onChange={(e) => setOutdoorWork(e.target.value as OutdoorWork)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="NONE">{currentT.outdoorNone}</option>
-                      <option value="MAINTENANCE">{currentT.outdoorMaint}</option>
-                      <option value="LANDSCAPING">{currentT.outdoorLandscaping}</option>
-                    </select>
                   </div>
 
-                  {/* Buttons */}
+                  {/* Buitenwerken / Espaces verts */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-bold text-slate-800">{currentT.outdoorLabel}</label>
+                      <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold">{currentT.outdoorOption}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{currentT.outdoorSub}</p>
+
+                    <div className="grid grid-cols-3 gap-3 pt-2">
+                      <button
+                        onClick={() => setOutdoorWork('NONE')}
+                        className={`p-3 rounded-xl border text-center text-xs font-semibold transition-all ${
+                          outdoorWork === 'NONE' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        🚫 {currentT.outdoorNone}
+                      </button>
+                      <button
+                        onClick={() => setOutdoorWork('MAINTENANCE')}
+                        className={`p-3 rounded-xl border text-center text-xs font-semibold transition-all ${
+                          outdoorWork === 'MAINTENANCE' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        🪴 {currentT.outdoorMaint}
+                      </button>
+                      <button
+                        onClick={() => setOutdoorWork('LANDSCAPING')}
+                        className={`p-3 rounded-xl border text-center text-xs font-semibold transition-all ${
+                          outdoorWork === 'LANDSCAPING' ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500' : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        🏗️ {currentT.outdoorLandscaping}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="flex justify-between pt-4">
                     <button 
                       onClick={() => setCurrentStep(1)}
-                      className="px-5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all"
+                      className="text-slate-600 hover:text-slate-900 font-semibold text-xs px-4 py-2"
                     >
                       {currentT.backBtn}
                     </button>
@@ -747,76 +833,97 @@ export default function App() {
                 </div>
               )}
 
-              {/* STEP 3 */}
+              {/* ÉTAPE 3 : RÉSULTAT FISCAL EXPLICITE */}
               {currentStep === 3 && (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-slate-900">{currentT.step3Header}</h2>
-                    <button 
-                      onClick={handleSaveHistory}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm flex items-center gap-1"
-                    >
-                      {currentT.saveBtn}
-                    </button>
-                  </div>
+                  <h2 className="text-lg font-bold text-slate-900">{currentT.step3Header}</h2>
 
-                  {/* Verdict Box */}
-                  <div className="p-5 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-3">
+                  {/* Cadre fiscal principal */}
+                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="bg-blue-600 text-white text-xs font-black px-3 py-1 rounded-md">
+                      <p className="text-emerald-900 font-bold text-base flex items-center gap-2">
+                        ✓ {currentVerdict.title}
+                      </p>
+                      <span className="bg-emerald-600 text-white text-xs font-black px-3 py-1 rounded-lg">
                         {currentVerdict.rateLabel}
                       </span>
-                      <span className="text-xs font-mono text-slate-500">{currentVerdict.code}</span>
                     </div>
-                    <h3 className="text-base font-extrabold text-blue-950">{currentVerdict.title}</h3>
-                    <p className="text-xs text-slate-700 leading-relaxed">{currentVerdict.legalText}</p>
+                    <div className="p-3 bg-white/80 rounded-lg border border-emerald-100 font-mono text-xs text-slate-800 leading-relaxed">
+                      "{currentVerdict.legalText}"
+                    </div>
                   </div>
 
-                  {buildingUsage === 'MIXED' && clientStatus === 'B2C' && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
+                  {/* Avertissement pour travaux mixtes */}
+                  {buildingUsage === 'MIXED' && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
                       <p className="font-bold">{currentT.mixedWarningTitle}</p>
-                      <p>{currentT.mixedWarningBody}</p>
+                      <p className="leading-relaxed">{currentT.mixedWarningBody}</p>
+                      <p className="font-semibold text-slate-700 pt-1 border-t border-amber-200/60">
+                        Prorata appliqué : Privé ({privateRatio}%) / Pro ({proRatio}%) sur surface totale de {totalSurface} m².
+                      </p>
                     </div>
                   )}
 
-                  <div className="flex justify-between pt-4 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
                     <button 
                       onClick={() => setCurrentStep(2)}
-                      className="px-5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all"
+                      className="text-slate-600 hover:text-slate-900 font-semibold text-xs px-3 py-2"
                     >
                       {currentT.backBtn}
                     </button>
-                    <button 
-                      onClick={() => setViewMode('QUOTE')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm"
-                    >
-                      {currentT.transferDevisBtn}
-                    </button>
+
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => {
+                          const newItem: HistoryItem = {
+                            id: Date.now().toString(),
+                            date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            clientName: clientName || 'Client',
+                            vatRate: currentVerdict.rateLabel,
+                            workNatureLabel: workNature,
+                          };
+                          setHistory([newItem, ...history]);
+                          showToast('Bepaling opgeslagen in historiek!');
+                        }}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2.5 rounded-xl text-xs transition-all border border-slate-300"
+                      >
+                        {currentT.saveBtn}
+                      </button>
+
+                      <button 
+                        onClick={() => setViewMode('QUOTE')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md"
+                      >
+                        {currentT.transferDevisBtn}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
+
             </div>
 
-            {/* Right Sidebar - History */}
-            <div className="space-y-6">
+            {/* Historique latéral */}
+            <div className="lg:col-span-1">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>📜</span> {currentT.historyTitle}
-                </h3>
-                
+                <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                  <span className="text-lg">📜</span>
+                  <h3 className="font-bold text-sm text-slate-800">{currentT.historyTitle}</h3>
+                </div>
+
                 {history.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic text-center py-6">{currentT.historyEmpty}</p>
+                  <p className="text-xs text-slate-400 italic text-center py-8">{currentT.historyEmpty}</p>
                 ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  <div className="space-y-3">
                     {history.map((item) => (
-                      <div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-                        <div className="flex justify-between font-bold text-slate-800">
-                          <span>{item.clientName}</span>
-                          <span className="text-blue-600">{item.vatRate}</span>
+                      <div key={item.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-slate-800">{item.clientName}</span>
+                          <span className="text-[10px] text-slate-400">{item.date}</span>
                         </div>
-                        <div className="flex justify-between text-[10px] text-slate-500">
-                          <span>{item.workNatureLabel}</span>
-                          <span>{item.date}</span>
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-600">{item.workNatureLabel}</span>
+                          <span className="font-bold text-blue-600">{item.vatRate}</span>
                         </div>
                       </div>
                     ))}
@@ -827,152 +934,227 @@ export default function App() {
           </div>
         )}
 
-        {/* QUOTE / INVOICE VIEWS */}
+        {/* --- VUE DEVIS ET FACTURE EDITEURS --- */}
         {(viewMode === 'QUOTE' || viewMode === 'INVOICE') && (
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg space-y-6 max-w-4xl mx-auto">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg space-y-8 max-w-4xl mx-auto">
+            
+            {/* Header du document */}
+            <div className="flex justify-between items-start border-b border-slate-200 pb-6">
+              <div>
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                  {viewMode === 'QUOTE' ? currentT.quoteTitle : currentT.invoiceTitle}
+                </span>
+                <h2 className="text-2xl font-black text-slate-900 mt-1">
+                  {viewMode === 'QUOTE' ? currentT.quoteTitle : currentT.invoiceTitle}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {viewMode === 'QUOTE' ? currentT.quoteNum : currentT.invoiceNum}
+                </p>
+              </div>
               <button 
                 onClick={() => setViewMode('CALCULATOR')}
-                className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-2 rounded-lg"
               >
-                ← {lang === 'FR' ? 'Retour au calculateur' : 'Terug naar calculator'}
+                ← Terug naar calculator
               </button>
-              <div className="flex space-x-2">
-                <button 
-                  onClick={() => setViewMode('QUOTE')}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold ${viewMode === 'QUOTE' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
-                >
-                  {currentT.quoteTitle}
-                </button>
-                <button 
-                  onClick={() => setViewMode('INVOICE')}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold ${viewMode === 'INVOICE' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
-                >
-                  {currentT.invoiceTitle}
-                </button>
+            </div>
+
+            {/* Coordonnées Prestataire & Client */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">{currentT.providerSectionTitle}</p>
+                <input 
+                  type="text" 
+                  value={providerName} 
+                  onChange={(e) => setProviderName(e.target.value)}
+                  className="w-full text-xs font-bold px-2 py-1 border border-slate-300 rounded bg-white"
+                  placeholder="Nom de votre entreprise"
+                />
+                <input 
+                  type="text" 
+                  value={providerVat} 
+                  onChange={(e) => setProviderVat(e.target.value)}
+                  className="w-full text-xs px-2 py-1 border border-slate-300 rounded bg-white"
+                  placeholder="Numéro TVA"
+                />
+                <input 
+                  type="text" 
+                  value={providerAddress} 
+                  onChange={(e) => setProviderAddress(e.target.value)}
+                  className="w-full text-xs px-2 py-1 border border-slate-300 rounded bg-white"
+                  placeholder="Adresse"
+                />
+                <input 
+                  type="text" 
+                  value={providerIban} 
+                  onChange={(e) => setProviderIban(e.target.value)}
+                  className="w-full text-xs px-2 py-1 border border-slate-300 rounded bg-white"
+                  placeholder="IBAN"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{currentT.clientSectionTitle}</p>
+                <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
+                  <p className="text-xs font-bold text-slate-800">{clientName || 'Nom du client non spécifié'}</p>
+                  <p className="text-xs font-mono text-slate-600">{vatNumber || 'Pas de numéro de TVA'}</p>
+                  <p className="text-xs text-slate-600">{country}</p>
+                  <div className="pt-2 border-t border-slate-100">
+                    <p className="text-[11px] font-bold text-emerald-700">{currentVerdict.title}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 text-xs">
-              <div className="space-y-1">
-                <h4 className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">{currentT.providerSectionTitle}</h4>
-                <p className="font-extrabold text-slate-800">{providerName}</p>
-                <p className="text-slate-600">{providerAddress}</p>
-                <p className="font-mono text-slate-600">TVA : {providerVat}</p>
-                <p className="font-mono text-slate-600">IBAN : {providerIban}</p>
+            {/* Tableau dynamique des travaux */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-800">Prestations & Matériaux</h3>
+                <button 
+                  onClick={handleAddItem}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800"
+                >
+                  {currentT.addWorkLine}
+                </button>
               </div>
-              <div className="space-y-1">
-                <h4 className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">{currentT.clientSectionTitle}</h4>
-                <p className="font-extrabold text-slate-800">{clientName || 'Client'}</p>
-                <p className="text-slate-600">{country}</p>
-                {vatNumber && <p className="font-mono text-slate-600">TVA : {vatNumber}</p>}
-              </div>
-            </div>
 
-            {/* Items Table */}
-            <div className="space-y-3 pt-4">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-semibold">
-                    <th className="pb-2">Description</th>
-                    <th className="pb-2 w-20 text-center">Qté</th>
-                    <th className="pb-2 w-28 text-right">Prix Unitaire</th>
-                    <th className="pb-2 w-28 text-right">Total HTVA</th>
-                    <th className="pb-2 w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {quoteItems.map((item) => (
-                    <tr key={item.id}>
-                      <td className="py-2 pr-2">
-                        <input 
-                          type="text" 
-                          value={item.description}
-                          onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
-                        />
-                      </td>
-                      <td className="py-2 text-center">
-                        <input 
-                          type="number" 
-                          value={item.qty}
-                          onChange={(e) => handleUpdateItem(item.id, 'qty', Number(e.target.value))}
-                          className="w-16 px-2 py-1 border border-slate-200 rounded text-xs text-center"
-                        />
-                      </td>
-                      <td className="py-2 text-right">
-                        <input 
-                          type="number" 
-                          value={item.unitPrice}
-                          onChange={(e) => handleUpdateItem(item.id, 'unitPrice', Number(e.target.value))}
-                          className="w-24 px-2 py-1 border border-slate-200 rounded text-xs text-right"
-                        />
-                      </td>
-                      <td className="py-2 text-right font-mono font-bold">
-                        {(item.qty * item.unitPrice).toFixed(2)} €
-                      </td>
-                      <td className="py-2 text-center">
-                        <button 
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="text-red-500 hover:text-red-700 font-bold"
-                        >
-                          ✕
-                        </button>
-                      </td>
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                    <tr>
+                      <th className="p-3">Description</th>
+                      <th className="p-3 w-20 text-center">Qté</th>
+                      <th className="p-3 w-32 text-right">Prix Unit. (€)</th>
+                      <th className="p-3 w-32 text-right">Total HTVA (€)</th>
+                      <th className="p-3 w-10 text-center"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              <button 
-                onClick={handleAddItem}
-                className="text-xs text-blue-600 font-bold hover:underline"
-              >
-                {currentT.addWorkLine}
-              </button>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {quoteItems.map((item) => (
+                      <tr key={item.id}>
+                        <td className="p-2">
+                          <input 
+                            type="text" 
+                            value={item.description}
+                            onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
+                            className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
+                            placeholder="Description des travaux..."
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input 
+                            type="number" 
+                            value={item.qty}
+                            onChange={(e) => handleUpdateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
+                            className="w-full px-2 py-1 border border-slate-200 rounded text-xs text-center"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input 
+                            type="number" 
+                            value={item.unitPrice}
+                            onChange={(e) => handleUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className="w-full px-2 py-1 border border-slate-200 rounded text-xs text-right"
+                          />
+                        </td>
+                        <td className="p-3 text-right font-bold text-slate-800">
+                          {(item.qty * item.unitPrice).toFixed(2)} €
+                        </td>
+                        <td className="p-2 text-center">
+                          <button 
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="text-red-500 hover:text-red-700 font-bold"
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Totals */}
-            <div className="border-t border-slate-200 pt-4 flex justify-end">
-              <div className="w-64 space-y-2 text-xs">
+            {/* Totaux & Taux calculé */}
+            <div className="flex justify-end pt-2">
+              <div className="w-72 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-600">
-                  <span>{currentT.subtotalLabel} :</span>
-                  <span className="font-mono font-bold">{subtotal.toFixed(2)} €</span>
+                  <span>{currentT.subtotalLabel}:</span>
+                  <span className="font-semibold">{subtotal.toFixed(2)} €</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>{currentT.vatLabel} ({currentVerdict.rateLabel}) :</span>
-                  <span className="font-mono font-bold">{vatAmount.toFixed(2)} €</span>
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>{currentT.vatLabel} ({currentVerdict.rateLabel}):</span>
+                  <span>{vatAmount.toFixed(2)} €</span>
                 </div>
-                <div className="flex justify-between text-slate-900 font-extrabold text-sm pt-2 border-t border-slate-200">
-                  <span>{currentT.totalLabel} :</span>
-                  <span className="font-mono text-blue-600">{totalTtc.toFixed(2)} €</span>
+                <div className="flex justify-between text-sm font-black text-slate-900 border-t border-slate-300 pt-2">
+                  <span>{currentT.totalLabel}:</span>
+                  <span>{totalTtc.toFixed(2)} €</span>
                 </div>
               </div>
             </div>
 
-            {/* Legal notice block */}
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
-              <p className="font-bold text-slate-700">{currentT.legalNoticeTitle}</p>
-              <p className="text-slate-600 italic leading-relaxed">{currentVerdict.legalText}</p>
+            {/* Mention légale obligatoire */}
+            <div className="p-4 bg-slate-100 rounded-xl space-y-1">
+              <p className="text-xs font-bold text-slate-700">{currentT.legalNoticeTitle}</p>
+              <p className="text-xs font-mono text-slate-600 leading-relaxed italic">
+                "{currentVerdict.legalText}"
+              </p>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-              <button 
-                onClick={() => window.print()}
-                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm"
-              >
-                {viewMode === 'QUOTE' ? currentT.printQuoteBtn : currentT.printInvoiceBtn}
-              </button>
-              <button 
-                onClick={() => showToast('Transfert Peppol simulé avec succès !')}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm"
-              >
-                {currentT.peppolBtn}
-              </button>
+            {/* Actions Devis / Facture */}
+            <div className="flex flex-wrap justify-between items-center pt-4 border-t border-slate-200 gap-3">
+              {viewMode === 'QUOTE' ? (
+                <>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => showToast('Devis enregistré !')}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs border border-slate-300"
+                    >
+                      {currentT.saveQuoteBtn}
+                    </button>
+                    <button 
+                      onClick={() => window.print()}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs border border-slate-300"
+                    >
+                      {currentT.printQuoteBtn}
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => setViewMode('INVOICE')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md"
+                  >
+                    {currentT.convertToInvoiceBtn}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => showToast('Facture enregistrée !')}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs border border-slate-300"
+                    >
+                      {currentT.saveInvoiceBtn}
+                    </button>
+                    <button 
+                      onClick={() => window.print()}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs border border-slate-300"
+                    >
+                      {currentT.printInvoiceBtn}
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => showToast('Facture transmise avec succès au réseau Peppol !')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md"
+                  >
+                    {currentT.peppolBtn}
+                  </button>
+                </>
+              )}
             </div>
+
           </div>
         )}
+
       </main>
     </div>
   );
