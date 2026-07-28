@@ -13,7 +13,7 @@ const EU_COUNTRIES = [
   { code: 'HR', nameFR: 'Croatie (HR)', nameNL: 'Kroatië (HR)' },
   { code: 'DK', nameFR: 'Danemark (DK)', nameNL: 'Denemarken (DK)' },
   { code: 'ES', nameFR: 'Espagne (ES)', nameNL: 'Spanje (ES)' },
-  { code: 'EE', nameFR: 'Estonie (EE)', nameNL: 'Estland (EE)' },
+  { code: 'EE', nameFR: 'Estonie (EE)', nameNL: 'Letland (EE)' },
   { code: 'FI', nameFR: 'Finlande (FI)', nameNL: 'Finland (FI)' },
   { code: 'GR', nameFR: 'Grèce (GR)', nameNL: 'Griekenland (GR)' },
   { code: 'HU', nameFR: 'Hongrie (HU)', nameNL: 'Hongarije (HU)' },
@@ -31,263 +31,256 @@ const EU_COUNTRIES = [
   { code: 'SE', nameFR: 'Suède (SE)', nameNL: 'Zweden (SE)' }
 ];
 
-// --- DICTIONNAIRE MULTILINGUE STRICT (FR / NL) ---
-const i18n = {
-  fr: {
-    app_title: "DigiBât VAT / DigiBouw BTW",
-    badge_compliance: "✓ Conforme réformes 2025-2026",
-    step1: "Profil Client",
-    step2: "Bien & Travaux",
-    step3: "Résultat",
-    step1_title: "1. Profil du Client",
-    client_name: "Nom / Raison Sociale",
-    client_country: "Pays (Union Européenne)",
-    vat_status: "Statut TVA Client",
-    status_pro: "Assujetti à la TVA (B2B)",
-    status_private: "Particulier / Non-assujetti (B2C)",
-    vat_number: "Numéro de TVA",
-    btn_vies: "Vérifier VIES",
-    btn_next: "Continuer vers Étape 2 →",
-    step2_title: "2. Bien Immobilier & Nature des Travaux",
-    section_age: "Ancienneté du Bâtiment",
-    age_old: "> 10 ans",
-    age_old_desc: "Logement ancien",
-    age_new: "< 10 ans",
-    age_new_desc: "Nouvelle construction",
-    section_usage: "Usage du Bâtiment",
-    use_100_priv: "100% Privé",
-    use_50_priv: "> 50% Privé",
-    use_100_pro: "Exclusif Pro",
-    use_mixed: "Mixte (Privé + Pro)",
-    mixed_hint: "Répartition de la surface (Superficie totale min. 200 m²) :",
-    priv_m2: "Surface Privée (m²)",
-    pro_m2: "Surface Pro (m²)",
-    surface_err: "La surface totale doit être d'au moins 200 m².",
-    section_nature: "Nature des Travaux",
-    nat_renov: "Rénovation standard",
-    nat_heat: "Pompe à chaleur",
-    nat_garden: "Entretien courant / Jardinage",
-    nat_solar: "Panneaux solaires & Isolation",
-    nat_demo: "Démolition et/ou Construction",
-    section_exterior: "🍃 Travaux extérieurs / Espaces verts (optionnel)",
-    ext_desc: "Cochez uniquement si la prestation porte sur l'entretien ou l'aménagement d'espaces verts.",
-    ext_none: "Ne s'lique pas",
-    ext_maint: "Entretien courant (Tonte, taille, plantes...)",
-    ext_land: "Aménagement & Gros travaux (Terrasse, pavage...)",
-    site_address: "Adresse du Chantier / Bien",
-    btn_back: "← Retour",
-    btn_calc: "Voir le résultat →",
-    step3_title: "3. Résultat & Régime Fiscal Applicable",
-    res_cocontractant: "✓ Autoliquidation — Régime Cocontractant",
-    res_badge_cocontractant: "0% (Autoliquidation / Régime Cocontractant)",
-    res_legal_cocontractant: '"Autoliquidation : En l\'absence de contestation par écrit dans un délai d\'un mois à compter de la réception de la facture, le client est présumé reconnaître qu\'il est un assujetti tenu au dépôt de déclarations périodiques (Art. 20 de l\'Arrêté Royal n° 1)."',
-    res_standard_6: "Taux réduit de 6% applicable",
-    res_standard_21: "Taux normal de 21% applicable",
-    warn_mixed_title: "⚠️ TRAITEMENT DES TRAVAUX MIXTES (PRIVÉ + PRO) :",
-    warn_mixed_text: "En cas d'usage mixte, une ventilation obligatoire des montants doit être effectuée (séparation prorata privé 6% / pro 21% ou autoliquidation B2B Art. 20).",
-    btn_convert_quote: "Omzetten naar Offerte / Convertir en Devis",
-    history_title: "Historique des déterminations",
-    history_empty: "Aucune détermination enregistrée.",
-    quote_badge: "DEVIS / OFFERTE",
-    btn_back_calc: "← Terug naar calculator",
-    provider_title: "PRESTATAIRE / ENTREPRENEUR",
-    client_title: "CLIENT & CHANTIER",
-    items_title: "Prestations & Matériaux",
-    btn_add_line: "+ Ajouter une ligne",
-    th_desc: "DESCRIPTION",
-    th_qty: "QTÉ",
-    th_unit_price: "PRIX UNIT. (€)",
-    th_total: "TOTAL HTVA (€)",
-    lbl_subtotal: "Sous-total HTVA:",
-    legal_notice_title: "Mention légale obligatoire à faire figurer sur le document :",
-    btn_save_quote: "💾 Enregistrer le devis",
-    btn_print: "🖨️ Imprimer / PDF",
-    btn_to_invoice: "⚡ Convertir en Facture →",
-    invoice_badge: "FACTURE / FACTUUR",
-    badge_peppol_ready: "Prêt pour Peppol",
-    lbl_delivery_date: "Date de livraison des travaux (saisie manuelle) :",
-    btn_save_inv: "💾 Enregistrer la facture",
-    btn_peppol: "Transférer via Peppol"
-  },
-  nl: {
-    app_title: "DigiBât VAT / DigiBouw BTW",
-    badge_compliance: "✓ Conform de hervormingen 2025-2026",
-    step1: "Klantprofiel",
-    step2: "Onroerend goed",
-    step3: "Resultaat",
-    step1_title: "1. Klantprofiel",
-    client_name: "Naam / Bedrijfsnaam",
-    client_country: "Land (Europese Unie)",
-    vat_status: "Btw-status klant",
-    status_pro: "Btw-plichtige (B2B)",
-    status_private: "Particulier / Niet-btw-plichtige (B2C)",
-    vat_number: "Btw-nummer",
-    btn_vies: "VIES Controleren",
-    btn_next: "Ga naar Stap 2 →",
-    step2_title: "2. Onroerend goed & Aard van de werken",
-    section_age: "Ouderdom van het gebouw",
-    age_old: "> 10 jaar",
-    age_old_desc: "Oude woning",
-    age_new: "< 10 jaar",
-    age_new_desc: "Nieuwbouw",
-    section_usage: "Gebruik van het gebouw",
-    use_100_priv: "100% Privé",
-    use_50_priv: "> 50% Privé",
-    use_100_pro: "Exclusief Professioneel",
-    use_mixed: "Gemengd (Privé + Pro)",
-    mixed_hint: "Verdeling van de oppervlakte (Totale oppervlakte min. 200 m²):",
-    priv_m2: "Privé-oppervlakte (m²)",
-    pro_m2: "Professionele opp. (m²)",
-    surface_err: "De totale oppervlakte moet minstens 200 m² zijn.",
-    section_nature: "Aard van de werken",
-    nat_renov: "Standaard renovatie",
-    nat_heat: "Warmtepomp",
-    nat_garden: "Gewoon onderhoud / Tuinieren",
-    nat_solar: "Zonnepanelen & Isolatie",
-    nat_demo: "Sloop en/of Bouw",
-    section_exterior: "🍃 Buitenwerken / Groenzone (optioneel)",
-    ext_desc: "Vink alleen aan als de dienst betrekking heeft op tuinonderhoud of -aanleg.",
-    ext_none: "Niet van toepassing",
-    ext_maint: "Gewoon onderhoud (Gras maaien, heggen snoeien...)",
-    ext_land: "Aanleg & Grote werken (Terras, bestrating...)",
-    site_address: "Adres van de werf / Goed",
-    btn_back: "← Terug",
-    btn_calc: "Verdict bekijken →",
-    step3_title: "3. Resultaat & Toepasselijk btw-regime",
-    res_cocontractant: "✓ Btw verlegd — Medecontractant",
-    res_badge_cocontractant: "0% (Btw verlegd)",
-    res_legal_cocontractant: '"Btw verlegd: Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na ontvangst van de factuur, wordt de afnemer geacht te erkennen dat hij een belastingplichtige is die gehouden is tot de indiening van periodieke aangiften (Art. 20 van het Koninklijk Besluit nr. 1)."',
-    res_standard_6: "Verlaagd tarief van 6% van toepassing",
-    res_standard_21: "Normaal tarief van 21% van toepassing",
-    warn_mixed_title: "⚠️ BEHANDELING VAN GEMENGDE WERKEN (PRIVÉ + PRO):",
-    warn_mixed_text: "Bij gemengd gebruik is een verplichte uitsplitsing van de bedragen vereist (pro rata privé 6% / pro 21% of btw verlegd B2B Art. 20).",
-    btn_convert_quote: "Omzetten naar Offerte",
-    history_title: "Historiek van de bepalingen",
-    history_empty: "Geen bepalingen geregistreerd.",
-    quote_badge: "OFFERTE / DEVIS",
-    btn_back_calc: "← Terug naar calculator",
-    provider_title: "DIENSTVERLENER / ONDERNEMER",
-    client_title: "KLANT & WERF",
-    items_title: "Prestaties & Materialen",
-    btn_add_line: "+ Lijn toevoegen",
-    th_desc: "OMSCHRIJVING",
-    th_qty: "AANTAL",
-    th_unit_price: "EENHEIDSPRIJS (€)",
-    th_total: "TOTAAL EXCL. BTW (€)",
-    lbl_subtotal: "Subtotaal EXCL. BTW:",
-    legal_notice_title: "Verplichte wettelijke vermelding op het document:",
-    btn_save_quote: "💾 Offerte opslaan",
-    btn_print: "🖨️ Afdrukken / PDF",
-    btn_to_invoice: "⚡ Omzetten naar Factuur →",
-    invoice_badge: "FACTUUR / FACTURE",
-    badge_peppol_ready: "Klaar voor Peppol",
-    lbl_delivery_date: "Opleveringsdatum van de werken (handmatige invoer):",
-    btn_save_inv: "💾 Factuur opslaan",
-    btn_peppol: "Verzenden via Peppol"
-  }
-};
+interface PrestationItem {
+  id: string;
+  description: string;
+  qty: number;
+  unitPrice: number | '';
+}
 
 export default function App() {
-  const [lang, setLang] = useState<'fr' | 'nl'>('fr');
-  const [step, setStep] = useState<1 | 2 | 3 | 'quote' | 'invoice'>(1);
+  // Langue de l'interface
+  const [lang, setLang] = useState<'FR' | 'NL'>('FR');
+  
+  // Étape courante : 1, 2, 3, 'devis', 'facture'
+  const [step, setStep] = useState<1 | 2 | 3 | 'devis' | 'facture'>(1);
 
-  // Étape 1
+  // Étape 1 : Informations client (Champs neutres/vides par défaut)
   const [clientName, setClientName] = useState('');
-  const [clientCountry, setClientCountry] = useState('BE');
-  const [vatStatus, setVatStatus] = useState<'pro' | 'particulier'>('pro');
   const [vatNumber, setVatNumber] = useState('');
-  const [isViesVerified, setIsViesVerified] = useState(false);
-  const [viesStatusText, setViesStatusText] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('BE');
+  const [clientVatStatus, setClientVatStatus] = useState('B2B');
+  const [isViesValidated, setIsViesValidated] = useState(true);
 
-  // Étape 2
-  const [buildingAge, setBuildingAge] = useState<'old' | 'new'>('old');
-  const [usage, setUsage] = useState<'100_priv' | 'plus_50_priv' | '100_pro' | 'mixed'>('100_priv');
-  const [privM2, setPrivM2] = useState<number>(120);
-  const [proM2, setProM2] = useState<number>(100);
-  const [nature, setNature] = useState<'renov' | 'heat_pump' | 'gardening' | 'solar' | 'demolition'>('renov');
-  const [exterior, setExterior] = useState<'none' | 'maintenance' | 'landscaping'>('none');
+  // Étape 2 : Bien & Travaux
+  const [buildingAge, setBuildingAge] = useState<'gt10' | 'lt10'>('gt10');
+  const [buildingUse, setBuildingUse] = useState<'100priv' | 'gt50priv' | 'exclPro' | 'mixed'>('100priv');
+  const [workType, setWorkType] = useState<'renovation' | 'heatpump' | 'garden' | 'solar' | 'demolition'>('renovation');
+  const [outdoorWork, setOutdoorWork] = useState<'none' | 'maintenance' | 'landscaping'>('none');
   const [siteAddress, setSiteAddress] = useState('');
 
-  // Module Devis (Prix vides/zéro par défaut selon votre demande)
-  const [quoteLines, setQuoteLines] = useState<Array<{ id: number; desc: string; qty: number; price: string }>>([
-    { id: 1, desc: 'Travaux de rénovation / Renovatieboorden', qty: 1, price: '' }
-  ]);
-  const [quoteTimestamp, setQuoteTimestamp] = useState('');
-
-  // Module Facture
-  const [deliveryDate, setDeliveryDate] = useState<string>(new Date().toISOString().split('T')[0]);
-
-  // Historique
+  // Historique des déterminations
   const [history, setHistory] = useState<Array<{ name: string; result: string; time: string }>>([]);
 
-  const t = i18n[lang];
+  // Informations de l'entrepreneur (Éditables manuellement)
+  const [contractorName, setContractorName] = useState('Mon Entreprise SRL / My Company BV');
+  const [contractorVat, setContractorVat] = useState('BE0123456789');
+  const [contractorAddress, setContractorAddress] = useState('Rue du Progrès 12, 1000 Bruxelles');
 
-  // Vérification VIES
-  const handleViesCheck = () => {
-    if (vatNumber.trim().length > 6) {
-      setIsViesVerified(true);
-      setViesStatusText('✓ VIES Validated (OK)');
-    } else {
-      setIsViesVerified(false);
-      setViesStatusText('✖ Invalid VAT Number');
+  // Devis / Facture items
+  const [items, setItems] = useState<PrestationItem[]>([
+    { id: '1', description: 'Travaux de rénovation / Renovatieboorden', qty: 1, unitPrice: '' }
+  ]);
+  const [documentTimestamp, setDocumentTimestamp] = useState('');
+  const [completionDate, setCompletionDate] = useState('2026-07-28');
+
+  // Textes traduits
+  const t = {
+    FR: {
+      subtitle: 'Détermination TVA « Travaux immobiliers » — Belgique 2025-2026',
+      reformBadge: '✓ Conforme réformes 2025-2026',
+      step1Title: '1. Profil Client',
+      step2Title: '2. Bien immobilier & Aard van de werken',
+      step3Title: '3. Résultat & Application régime TVA',
+      clientNameLabel: 'Nom / Raison Sociale',
+      clientVatStatusLabel: 'Statut TVA Client',
+      vatNumberLabel: 'Numéro de TVA',
+      verifyVies: 'Vérifier VIES',
+      viesOk: '✓ TVA VIES Validée (OK)',
+      btnStep2: 'Continuer vers Étape 2 →',
+      btnStep3: 'Voir le verdict →',
+      btnBack: '← Retour',
+      historyTitle: '📜 Historique des déterminations',
+      noHistory: 'Aucune détermination enregistrée.',
+      // Étape 2
+      ageTitle: 'ANCIENNETÉ DU BÂTIMENT',
+      ageOption1: '≥ 10 ans',
+      ageOption1Sub: 'Logement ancien',
+      ageOption2: '< 10 ans',
+      ageOption2Sub: 'Nouvelle construction',
+      useTitle: 'USAGE DU BÂTIMENT',
+      useOption1: '100% Privé',
+      useOption2: '> 50% Privé',
+      useOption3: 'Exclusif Pro',
+      useOption4: 'Mixte (Privé + Pro)',
+      natureTitle: 'NATURE DES TRAVAUX',
+      natureOption1: 'Rénovation standard',
+      natureOption2: 'Pompe à chaleur',
+      natureOption3: 'Entretien courant / Jardinage',
+      natureOption4: 'Panneaux solaires & Isolation',
+      natureOption5: 'Démolition et/ou Construction',
+      outdoorTitle: '🍃 TRAVAUX EXTÉRIEURS / ESPACES VERTS (OPTIONNEL)',
+      outdoorDesc: 'Cochez uniquement si la prestation porte sur l\'entretien ou l\'aménagement d\'espaces verts.',
+      outdoorOpt1: 'Ne s\'applique pas',
+      outdoorOpt2: 'Entretien courant (Tonte, taille, plantes...)',
+      outdoorOpt3: 'Aménagement & Gros travaux (Terrasse, pavage...)',
+      siteAddressLabel: 'Adresse du Chantier / Bien',
+      // Verdict
+      verdictTitle: '✓ TVA autoliquidée — Cocontractant',
+      verdictRate: '0% (TVA autoliquidée)',
+      verdictLegalText: '"TVA autoliquidée: En l\'absence de contestation par écrit dans un délai d\'un mois à compter de la réception de la facture, le cocontractant est présumé reconnaître qu\'il est un assujetti tenu au dépôt de déclarations périodiques (Art. 20 de l\'Arrêté Royal n° 1)."',
+      btnConvertToQuote: '📄 Convertir en Devis',
+      // Devis / Facture
+      quoteTitle: 'Devis N° : DEV-2026-001',
+      invoiceTitle: 'Facture N° : FAC-2026-001',
+      contractorHeader: 'PRESTATAIRE DE SERVICES / ENTREPRENEUR',
+      clientHeader: 'CLIENT & CHANTIER',
+      addLigne: '+ Ajouter une ligne',
+      descriptionCol: 'DESCRIPTION',
+      qtyCol: 'QUANTITÉ',
+      priceCol: 'PRIX UNITAIRE (€)',
+      totalCol: 'TOTAL HTVA (€)',
+      subtotalExcl: 'Sous-total HTVA :',
+      vatAmount: 'Montant TVA (0% Autoliquidation) :',
+      totalInc: 'TOTAL TTC :',
+      btnSaveQuote: '💾 Enregistrer le devis',
+      btnPrintPdf: '🖨️ Imprimer / PDF',
+      btnConvertToInvoice: '⚡ Convertir en Facture →',
+      btnSaveInvoice: '💾 Enregistrer la facture',
+      btnSendPeppol: '🌐 Envoyer via Peppol',
+      peppolReady: 'Prêt pour Peppol',
+      completionDateLabel: 'Date de livraison des travaux (saisie manuelle) :'
+    },
+    NL: {
+      subtitle: 'Btw-bepaling « Werken in onroerende staat » — België 2025-2026',
+      reformBadge: '✓ Conform de hervormingen 2025-2026',
+      step1Title: '1. Klantprofiel',
+      step2Title: '2. Onroerend goed & Aard van de werken',
+      step3Title: '3. Resultaat & Toepasselijk btw-regime',
+      clientNameLabel: 'Naam / Bedrijfsnaam',
+      clientVatStatusLabel: 'Btw-status Klant',
+      vatNumberLabel: 'Btw-nummer',
+      verifyVies: 'VIES Verifiëren',
+      viesOk: '✓ VIES Validated (OK)',
+      btnStep2: 'Ga naar Stap 2 →',
+      btnStep3: 'Verdict bekijken →',
+      btnBack: '← Terug',
+      historyTitle: '📜 Historiek van de bepalingen',
+      noHistory: 'Geen bepalingen geregistreerd.',
+      // Étape 2
+      ageTitle: 'OUDERDOM VAN HET GEBOUW',
+      ageOption1: '≥ 10 jaar',
+      ageOption1Sub: 'Oude woning',
+      ageOption2: '< 10 jaar',
+      ageOption2Sub: 'Nieuwbouw',
+      useTitle: 'GEBRUIK VAN HET GEBOUW',
+      useOption1: '100% Privé',
+      useOption2: '> 50% Privé',
+      useOption3: 'Exclusief Professioneel',
+      useOption4: 'Gemengd (Privé + Pro)',
+      natureTitle: 'AARD VAN DE WERKEN',
+      natureOption1: 'Standaard renovatie',
+      natureOption2: 'Warmtepomp',
+      natureOption3: 'Gewoon onderhoud / Tuinieren',
+      natureOption4: 'Zonnepanelen & Isolatie',
+      natureOption5: 'Sloop en/of Bouw',
+      outdoorTitle: '🍃 BUITENWERKEN / GROENZONE (OPTIONEEL)',
+      outdoorDesc: 'Vink alleen aan als de dienst betrekking heeft op tuinonderhoud of -aanleg.',
+      outdoorOpt1: 'Niet van toepassing',
+      outdoorOpt2: 'Gewoon onderhoud (Gras maaien, heggen snoeien...)',
+      outdoorOpt3: 'Aanleg & Grote werken (Terras, bestrating...)',
+      siteAddressLabel: 'Adres van de werf / Goed',
+      // Verdict
+      verdictTitle: '✓ Btw verlegd — Medecontractant',
+      verdictRate: '0% (Btw verlegd)',
+      verdictLegalText: '"Btw verlegd: Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na ontvangst van de factuur, wordt de afnemer geacht te erkennen dat hij een belastingplichtige is die gehouden is tot de indiening van periodieke aangiften (Art. 20 van het Koninklijk Besluit nr. 1)."',
+      btnConvertToQuote: '📄 Omzetten naar Offerte',
+      // Devis / Facture
+      quoteTitle: 'Offerte N° : DEV-2026-001',
+      invoiceTitle: 'Factuur N° : FAC-2026-001',
+      contractorHeader: 'DIENSTVERLENER / ONDERNEMER',
+      clientHeader: 'KLANT & WERF',
+      addLigne: '+ Lijn toevoegen',
+      descriptionCol: 'OMSCHRIJVING',
+      qtyCol: 'AANTAL',
+      priceCol: 'EENHEIDSPRIJS (€)',
+      totalCol: 'TOTAAL EXCL. BTW (€)',
+      subtotalExcl: 'Subtotaal EXCL. BTW :',
+      vatAmount: 'Montant TVA (0% Autoliquidation) :',
+      totalInc: 'TOTAAL TTC :',
+      btnSaveQuote: '💾 Offerte opslaan',
+      btnPrintPdf: '🖨️ Afdrukken / PDF',
+      btnConvertToInvoice: '⚡ Omzetten naar Factuur →',
+      btnSaveInvoice: '💾 Factuur opslaan',
+      btnSendPeppol: '🌐 Verzenden via Peppol',
+      peppolReady: 'Klaar voor Peppol',
+      completionDateLabel: 'Opleveringsdatum van de werken (handmatige invoer) :'
     }
-  };
+  }[lang];
 
-  // Calcul du résultat
-  const handleCalculate = () => {
-    setStep(3);
-    const resultBadge = vatStatus === 'pro' ? t.res_badge_cocontractant : '6% (BTW / TVA)';
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setHistory(prev => [{ name: clientName || 'Client', result: resultBadge, time }, ...prev]);
-  };
-
-  // Calculs financiers
-  const subtotal = quoteLines.reduce((acc, line) => {
-    const priceNum = parseFloat(line.price) || 0;
-    return acc + (line.qty * priceNum);
+  // Calculs financiers du devis / facture
+  const subtotal = items.reduce((acc, item) => {
+    const p = typeof item.unitPrice === 'number' ? item.unitPrice : 0;
+    return acc + (item.qty * p);
   }, 0);
 
-  const vatRate = vatStatus === 'pro' ? 0 : 0.06;
-  const vatAmount = subtotal * vatRate;
-  const totalTTC = subtotal + vatAmount;
-
-  const handleOpenQuote = () => {
-    setQuoteTimestamp(new Date().toLocaleString());
-    setStep('quote');
+  const addItem = () => {
+    setItems([...items, { id: Date.now().toString(), description: '', qty: 1, unitPrice: '' }]);
   };
 
-  const handleAddLine = () => {
-    setQuoteLines(prev => [...prev, { id: Date.now(), desc: 'Nouvelle prestation', qty: 1, price: '' }]);
+  const removeItem = (id: string) => {
+    setItems(items.filter(i => i.id !== id));
   };
 
-  const handleUpdateLine = (id: number, field: 'desc' | 'qty' | 'price', value: any) => {
-    setQuoteLines(prev => prev.map(line => line.id === id ? { ...line, [field]: value } : line));
+  const updateItem = (id: string, field: keyof PrestationItem, val: any) => {
+    setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
+  };
+
+  const generateQuote = () => {
+    const now = new Date();
+    setDocumentTimestamp(`${now.getDate()}-${now.getMonth()+1}-${now.getFullYear()}, ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`);
+    setStep('devis');
+  };
+
+  const generateInvoice = () => {
+    setStep('facture');
+  };
+
+  const saveDeterminationHistory = () => {
+    const newEntry = {
+      name: clientName || (lang === 'FR' ? 'Client non spécifié' : 'Onbekende klant'),
+      result: '0% (Btw verlegd / Autoliquidation)',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setHistory([newEntry, ...history]);
+    setStep(3);
   };
 
   return (
-    <div className="bg-slate-50 text-slate-800 font-sans min-h-screen p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8">
+      {/* CSS d'impression pour masquer l'historique et les boutons */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-full-width { width: 100% !important; max-width: 100% !important; }
+          body { background: white !important; p: 0 !important; }
+        }
+      `}</style>
 
-        {/* EN-TÊTE PRINCIPAL */}
-        <header className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* HEADER GLOBAL */}
+        <header className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-blue-700">{t.app_title}</h1>
-            <p className="text-sm text-slate-500">Btw-bepaling « Werken in onroerende staat » — België 2025-2026</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-blue-700">
+              DigiBât VAT / DigiBouw BTW
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">{t.subtitle}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-300">
-              {t.badge_compliance}
+          <div className="flex items-center gap-3 no-print">
+            <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-200">
+              {t.reformBadge}
             </span>
-            <div className="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1">
-              <button
-                onClick={() => setLang('fr')}
-                className={`px-3 py-1 text-xs font-bold rounded-md ${lang === 'fr' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600'}`}
+            <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex text-xs font-bold">
+              <button 
+                onClick={() => setLang('FR')} 
+                className={`px-3 py-1 rounded-md transition ${lang === 'FR' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 FR
               </button>
-              <button
-                onClick={() => setLang('nl')}
-                className={`px-3 py-1 text-xs font-bold rounded-md ${lang === 'nl' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600'}`}
+              <button 
+                onClick={() => setLang('NL')} 
+                className={`px-3 py-1 rounded-md transition ${lang === 'NL' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 NL
               </button>
@@ -295,470 +288,519 @@ export default function App() {
           </div>
         </header>
 
-        {/* NAVIGATION ÉTAPES */}
+        {/* STEPPER STEPS 1, 2, 3 */}
         {typeof step === 'number' && (
-          <nav className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex justify-around text-sm font-semibold">
-            <div className={`flex items-center gap-2 ${step === 1 ? 'text-blue-600' : 'text-slate-400'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${step === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>1</span>
-              <span>{t.step1}</span>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex justify-around text-sm font-semibold text-slate-500 no-print">
+            <div className={`flex items-center gap-2 ${step === 1 ? 'text-blue-600' : ''}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${step === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>1</span>
+              <span>{lang === 'FR' ? 'Profil Client' : 'Klantprofiel'}</span>
             </div>
-            <div className={`flex items-center gap-2 ${step === 2 ? 'text-blue-600' : 'text-slate-400'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${step === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>2</span>
-              <span>{t.step2}</span>
+            <div className={`flex items-center gap-2 ${step === 2 ? 'text-blue-600' : ''}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${step === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>2</span>
+              <span>{lang === 'FR' ? 'Bien & Travaux' : 'Onroerend goed'}</span>
             </div>
-            <div className={`flex items-center gap-2 ${step === 3 ? 'text-blue-600' : 'text-slate-400'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${step === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>3</span>
-              <span>{t.step3}</span>
+            <div className={`flex items-center gap-2 ${step === 3 ? 'text-blue-600' : ''}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${step === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>3</span>
+              <span>{lang === 'FR' ? 'Résultat' : 'Resultaat'}</span>
             </div>
-          </nav>
+          </div>
         )}
 
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        {/* CONTENU PRINCIPAL + HISTORIQUE LATÉRAL */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* ZONE DE TRAVAIL GAUCHE (2 colonnes) */}
+          <div className="lg:col-span-2 space-y-6 print-full-width">
 
-            {/* ÉTAPE 1: PROFIL CLIENT */}
+            {/* ÉTAPE 1 : PROFIL CLIENT */}
             {step === 1 && (
-              <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
-                <h2 className="text-lg font-bold text-slate-900 border-b pb-2">{t.step1_title}</h2>
-                
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+                <h2 className="text-xl font-bold text-slate-800">{t.step1Title}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.client_name}</label>
-                    <input
-                      type="text"
-                      value={clientName}
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">{t.clientNameLabel}</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Vicernant (NV)" 
+                      value={clientName} 
                       onChange={e => setClientName(e.target.value)}
-                      className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"
-                      placeholder="ex: Vicernant SRL"
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.client_country}</label>
-                    <select
-                      value={clientCountry}
-                      onChange={e => setClientCountry(e.target.value)}
-                      className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Pays / Land</label>
+                    <select 
+                      value={selectedCountry} 
+                      onChange={e => setSelectedCountry(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     >
                       {EU_COUNTRIES.map(c => (
                         <option key={c.code} value={c.code}>
-                          {lang === 'fr' ? c.nameFR : c.nameNL}
+                          {lang === 'FR' ? c.nameFR : c.nameNL}
                         </option>
                       ))}
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.vat_status}</label>
-                    <select
-                      value={vatStatus}
-                      onChange={e => {
-                        const val = e.target.value as 'pro' | 'particulier';
-                        setVatStatus(val);
-                        if (val === 'particulier') setIsViesVerified(true);
-                        else setIsViesVerified(false);
-                      }}
-                      className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">{t.clientVatStatusLabel}</label>
+                    <select 
+                      value={clientVatStatus} 
+                      onChange={e => setClientVatStatus(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     >
-                      <option value="pro">{t.status_pro}</option>
-                      <option value="particulier">{t.status_private}</option>
+                      <option value="B2B">{lang === 'FR' ? 'Assujetti à la TVA (B2B)' : 'Btw-plichtige (B2B)'}</option>
+                      <option value="B2C">{lang === 'FR' ? 'Particulier / Non-assujetti (B2C)' : 'Particulier (B2C)'}</option>
                     </select>
                   </div>
-
-                  <div className={vatStatus === 'particulier' ? 'opacity-40 pointer-events-none' : ''}>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.vat_number}</label>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">{t.vatNumberLabel}</label>
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={vatNumber}
+                      <input 
+                        type="text" 
+                        placeholder="BE0400075312" 
+                        value={vatNumber} 
                         onChange={e => setVatNumber(e.target.value)}
-                        className="w-full border rounded-lg p-2 text-sm"
-                        placeholder="BE0400075312"
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
                       />
-                      <button
-                        type="button"
-                        onClick={handleViesCheck}
+                      <button 
+                        onClick={() => setIsViesValidated(true)} 
                         className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition"
                       >
-                        {t.btn_vies}
+                        {t.verifyVies}
                       </button>
                     </div>
-                    {viesStatusText && (
-                      <p className={`text-xs mt-1 font-medium ${isViesVerified ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {viesStatusText}
-                      </p>
+                    {isViesValidated && (
+                      <p className="text-emerald-600 text-xs font-semibold mt-1.5">{t.viesOk}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t flex justify-end">
-                  <button
+                <div className="flex justify-end pt-4">
+                  <button 
                     onClick={() => setStep(2)}
-                    disabled={vatStatus === 'pro' && !isViesVerified}
-                    className={`text-sm font-bold px-5 py-2.5 rounded-lg transition ${
-                      vatStatus === 'pro' && !isViesVerified
-                        ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
-                    }`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-lg transition shadow-sm"
                   >
-                    {t.btn_next}
+                    {t.btnStep2}
                   </button>
                 </div>
-              </section>
+              </div>
             )}
 
-            {/* ÉTAPE 2: BIEN & TRAVAUX */}
+            {/* ÉTAPE 2 : BIEN IMMOBILIER & NATURE DES TRAVAUX */}
             {step === 2 && (
-              <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
-                <h2 className="text-lg font-bold text-slate-900 border-b pb-2">{t.step2_title}</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+                <h2 className="text-xl font-bold text-slate-800">{t.step2Title}</h2>
 
-                {/* Ancienneté */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t.section_age}</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div
-                      onClick={() => setBuildingAge('old')}
-                      className={`border rounded-xl p-3 text-center cursor-pointer transition ${buildingAge === 'old' ? 'border-blue-600 bg-blue-50 shadow-sm' : ''}`}
+                {/* ANCIENNETÉ */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase">{t.ageTitle}</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => setBuildingAge('gt10')}
+                      className={`p-4 border-2 rounded-xl text-center transition ${buildingAge === 'gt10' ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
                     >
-                      <div className="font-bold text-sm">{t.age_old}</div>
-                      <div className="text-xs text-slate-500">{t.age_old_desc}</div>
-                    </div>
-                    <div
-                      onClick={() => setBuildingAge('new')}
-                      className={`border rounded-xl p-3 text-center cursor-pointer transition ${buildingAge === 'new' ? 'border-blue-600 bg-blue-50 shadow-sm' : ''}`}
+                      <div className="font-extrabold text-base">{t.ageOption1}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{t.ageOption1Sub}</div>
+                    </button>
+                    <button 
+                      onClick={() => setBuildingAge('lt10')}
+                      className={`p-4 border-2 rounded-xl text-center transition ${buildingAge === 'lt10' ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
                     >
-                      <div className="font-bold text-sm">{t.age_new}</div>
-                      <div className="text-xs text-slate-500">{t.age_new_desc}</div>
-                    </div>
+                      <div className="font-extrabold text-base">{t.ageOption2}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{t.ageOption2Sub}</div>
+                    </button>
                   </div>
                 </div>
 
-                {/* Usage */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t.section_usage}</label>
+                {/* USAGE DU BÂTIMENT */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase">{t.useTitle}</label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[
-                      { key: '100_priv', label: t.use_100_priv },
-                      { key: 'plus_50_priv', label: t.use_50_priv },
-                      { key: '100_pro', label: t.use_100_pro },
-                      { key: 'mixed', label: t.use_mixed }
+                      { id: '100priv', label: t.useOption1 },
+                      { id: 'gt50priv', label: t.useOption2 },
+                      { id: 'exclPro', label: t.useOption3 },
+                      { id: 'mixed', label: t.useOption4 },
                     ].map(u => (
-                      <div
-                        key={u.key}
-                        onClick={() => setUsage(u.key as any)}
-                        className={`border rounded-xl p-3 text-center cursor-pointer transition ${usage === u.key ? 'border-blue-600 bg-blue-50 shadow-sm' : ''}`}
+                      <button 
+                        key={u.id}
+                        onClick={() => setBuildingUse(u.id as any)}
+                        className={`p-3 border-2 rounded-xl text-xs font-bold transition ${buildingUse === u.id ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
                       >
-                        <div className="font-bold text-xs">{u.label}</div>
-                      </div>
+                        {u.label}
+                      </button>
                     ))}
                   </div>
-
-                  {/* Surface Mixte */}
-                  {usage === 'mixed' && (
-                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-                      <p className="text-xs font-semibold text-amber-900">{t.mixed_hint}</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs text-slate-600">{t.priv_m2}</label>
-                          <input
-                            type="number"
-                            value={privM2}
-                            onChange={e => setPrivM2(parseFloat(e.target.value) || 0)}
-                            className="w-full border rounded p-1.5 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-600">{t.pro_m2}</label>
-                          <input
-                            type="number"
-                            value={proM2}
-                            onChange={e => setProM2(parseFloat(e.target.value) || 0)}
-                            className="w-full border rounded p-1.5 text-xs"
-                          />
-                        </div>
-                      </div>
-                      {(privM2 + proM2) < 200 && (
-                        <p className="text-xs text-red-600 font-medium">{t.surface_err}</p>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* Nature */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t.section_nature}</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                {/* NATURE DES TRAVAUX */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase">{t.natureTitle}</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
-                      { key: 'renov', label: t.nat_renov, span: '' },
-                      { key: 'heat_pump', label: t.nat_heat, span: '' },
-                      { key: 'gardening', label: t.nat_garden, span: '' },
-                      { key: 'solar', label: t.nat_solar, span: '' },
-                      { key: 'demolition', label: t.nat_demo, span: 'col-span-1 md:col-span-2' }
+                      { id: 'renovation', label: t.natureOption1 },
+                      { id: 'heatpump', label: t.natureOption2 },
+                      { id: 'garden', label: t.natureOption3 },
+                      { id: 'solar', label: t.natureOption4 },
+                      { id: 'demolition', label: t.natureOption5 },
                     ].map(n => (
-                      <div
-                        key={n.key}
-                        onClick={() => setNature(n.key as any)}
-                        className={`border rounded-lg p-2.5 text-center font-medium cursor-pointer transition ${n.span} ${nature === n.key ? 'border-blue-600 bg-blue-50 shadow-sm' : ''}`}
+                      <button 
+                        key={n.id}
+                        onClick={() => setWorkType(n.id as any)}
+                        className={`p-3 border-2 rounded-xl text-xs font-bold transition ${workType === n.id ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
                       >
                         {n.label}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Espaces Verts / Photo 1 */}
-                <div className="border-t pt-4">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t.section_exterior}</label>
-                  <p className="text-xs text-slate-500 mb-3">{t.ext_desc}</p>
-                  
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { key: 'none', icon: '🚫', label: t.ext_none },
-                      { key: 'maintenance', icon: '🌱', label: t.ext_maint },
-                      { key: 'landscaping', icon: '🏗️', label: t.ext_land }
-                    ].map(e => (
-                      <div
-                        key={e.key}
-                        onClick={() => setExterior(e.key as any)}
-                        className={`border rounded-xl p-3 text-center text-xs flex flex-col items-center justify-center min-h-[90px] cursor-pointer transition ${exterior === e.key ? 'border-blue-600 bg-blue-50 shadow-sm' : ''}`}
-                      >
-                        <span className="text-lg mb-1">{e.icon}</span>
-                        <span className="leading-tight text-[11px]">{e.label}</span>
-                      </div>
-                    ))}
+                {/* ESPACES VERTS (PHOTO 2 ALIGNMENT) */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <label className="block text-xs font-bold text-emerald-700 uppercase">{t.outdoorTitle}</label>
+                  <p className="text-xs text-slate-500 mb-2">{t.outdoorDesc}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button 
+                      onClick={() => setOutdoorWork('none')}
+                      className={`p-4 border-2 rounded-xl text-center transition flex flex-col items-center justify-center gap-1 ${outdoorWork === 'none' ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
+                    >
+                      <span className="text-red-500 font-bold text-lg">🚫</span>
+                      <span className="text-xs font-bold">{t.outdoorOpt1}</span>
+                    </button>
+                    <button 
+                      onClick={() => setOutdoorWork('maintenance')}
+                      className={`p-4 border-2 rounded-xl text-center transition flex flex-col items-center justify-center gap-1 ${outdoorWork === 'maintenance' ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
+                    >
+                      <span className="text-lg">🌱</span>
+                      <span className="text-xs font-bold">{t.outdoorOpt2}</span>
+                    </button>
+                    <button 
+                      onClick={() => setOutdoorWork('landscaping')}
+                      className={`p-4 border-2 rounded-xl text-center transition flex flex-col items-center justify-center gap-1 ${outdoorWork === 'landscaping' ? 'border-blue-500 bg-blue-50/50 text-blue-900' : 'border-slate-200 hover:border-slate-300'}`}
+                    >
+                      <span className="text-lg">🏗️</span>
+                      <span className="text-xs font-bold">{t.outdoorOpt3}</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Adresse Chantier */}
-                <div className="border-t pt-4">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t.site_address}</label>
-                  <input
-                    type="text"
-                    value={siteAddress}
+                {/* ADRESSE DU CHANTIER */}
+                <div className="pt-2">
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">{t.siteAddressLabel}</label>
+                  <input 
+                    type="text" 
+                    placeholder="ex: Rue du Progrès 45, 1000 Bruxelles" 
+                    value={siteAddress} 
                     onChange={e => setSiteAddress(e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm"
-                    placeholder="ex: Rue du Progrès 45, 1000 Bruxelles"
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
                   />
                 </div>
 
-                <div className="pt-4 border-t flex justify-between">
-                  <button onClick={() => setStep(1)} className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-lg">{t.btn_back}</button>
-                  <button onClick={handleCalculate} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-lg">{t.btn_calc}</button>
+                <div className="flex justify-between pt-4 border-t border-slate-100">
+                  <button 
+                    onClick={() => setStep(1)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-5 py-2.5 rounded-lg transition"
+                  >
+                    {t.btnBack}
+                  </button>
+                  <button 
+                    onClick={saveDeterminationHistory}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-lg transition shadow-sm"
+                  >
+                    {t.btnStep3}
+                  </button>
                 </div>
-              </section>
+              </div>
             )}
 
-            {/* ÉTAPE 3: RÉSULTAT */}
+            {/* ÉTAPE 3 : RÉSULTAT ET RÉGIME TVA */}
             {step === 3 && (
-              <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
-                <h2 className="text-lg font-bold text-slate-900 border-b pb-2">{t.step3_title}</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+                <h2 className="text-xl font-bold text-slate-800">{t.step3Title}</h2>
 
-                <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-5 space-y-3">
+                <div className="p-5 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-3">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-base font-bold text-emerald-900">
-                      {vatStatus === 'pro' ? t.res_cocontractant : t.res_standard_6}
-                    </h3>
-                    <span className="bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full">
-                      {vatStatus === 'pro' ? t.res_badge_cocontractant : '6% (BTW / TVA)'}
-                    </span>
+                    <h3 className="text-lg font-extrabold text-emerald-900">{t.verdictTitle}</h3>
+                    <span className="bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full">{t.verdictRate}</span>
                   </div>
-                  <p className="text-xs text-emerald-900 italic font-mono bg-white/60 p-3 rounded border border-emerald-200">
-                    {vatStatus === 'pro' ? t.res_legal_cocontractant : '"TVA 6% : Application du taux réduit sur facture."'}
+                  <p className="text-xs text-emerald-800 italic leading-relaxed bg-white/60 p-3 rounded-lg border border-emerald-100">
+                    {t.verdictLegalText}
                   </p>
                 </div>
 
-                {usage === 'mixed' && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-1">
-                    <h4 className="text-xs font-bold text-amber-900 uppercase">{t.warn_mixed_title}</h4>
-                    <p className="text-xs text-amber-800">{t.warn_mixed_text}</p>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t flex justify-between">
-                  <button onClick={() => setStep(2)} className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-lg">{t.btn_back}</button>
-                  <button onClick={handleOpenQuote} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2">
-                    <span>📄</span> <span>{t.btn_convert_quote}</span>
+                <div className="flex justify-between pt-4">
+                  <button 
+                    onClick={() => setStep(2)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-5 py-2.5 rounded-lg transition"
+                  >
+                    {t.btnBack}
+                  </button>
+                  <button 
+                    onClick={generateQuote}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-lg transition shadow-sm"
+                  >
+                    {t.btnConvertToQuote}
                   </button>
                 </div>
-              </section>
+              </div>
             )}
 
-            {/* MODULE DEVIS */}
-            {step === 'quote' && (
-              <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
-                <div className="flex justify-between items-center border-b pb-3">
+            {/* ÉCRAN DEVIS */}
+            {step === 'devis' && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6 print:shadow-none print:border-none">
+                <div className="flex justify-between items-start border-b border-slate-200 pb-4">
                   <div>
-                    <span className="text-xs font-bold text-blue-600 uppercase">{t.quote_badge}</span>
-                    <h2 className="text-xl font-bold text-slate-900">Devis N° : DEV-2026-001</h2>
-                    <p className="text-xs text-slate-400">{quoteTimestamp}</p>
+                    <h2 className="text-xl font-extrabold text-slate-900">{t.quoteTitle}</h2>
+                    <p className="text-xs text-slate-400 mt-1">{documentTimestamp}</p>
                   </div>
-                  <button onClick={() => setStep(3)} className="text-xs border px-3 py-1.5 rounded hover:bg-slate-50">{t.btn_back_calc}</button>
+                  <button 
+                    onClick={() => setStep(3)} 
+                    className="no-print text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg"
+                  >
+                    {t.btnBack}
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border">
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-blue-800 uppercase">{t.provider_title}</h3>
-                    <p className="font-semibold">Mon Entreprise SRL / My Company BV</p>
-                    <p>BE0123456789</p>
-                    <p>Rue du Progrès 12, 1000 Bruxelles</p>
+                {/* COORDONNÉES ENTREPRENEUR ET CLIENT */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <div className="space-y-2">
+                    <span className="text-xs font-extrabold text-blue-700 uppercase">{t.contractorHeader}</span>
+                    <input 
+                      type="text" 
+                      value={contractorName} 
+                      onChange={e => setContractorName(e.target.value)} 
+                      className="w-full p-1.5 text-xs font-bold border border-slate-300 rounded bg-white" 
+                    />
+                    <input 
+                      type="text" 
+                      value={contractorVat} 
+                      onChange={e => setContractorVat(e.target.value)} 
+                      className="w-full p-1.5 text-xs border border-slate-300 rounded bg-white" 
+                    />
+                    <input 
+                      type="text" 
+                      value={contractorAddress} 
+                      onChange={e => setContractorAddress(e.target.value)} 
+                      className="w-full p-1.5 text-xs border border-slate-300 rounded bg-white" 
+                    />
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-slate-600 uppercase">{t.client_title}</h3>
-                    <p className="font-bold text-sm">{clientName || 'Nom Client'}</p>
-                    <p>{vatNumber || 'N/A'}</p>
-                    <p className="text-emerald-700 font-semibold">{vatStatus === 'pro' ? t.res_cocontractant : t.res_standard_6}</p>
-                    <p className="text-slate-500 mt-2">Chantier : {siteAddress || 'Non spécifié'}</p>
+                  <div className="space-y-1 text-xs">
+                    <span className="text-xs font-extrabold text-slate-700 uppercase block mb-1">{t.clientHeader}</span>
+                    <p className="font-bold text-slate-900">{clientName || 'Vicernant (NV)'}</p>
+                    <p className="text-slate-600">{vatNumber || 'BE0400075312'}</p>
+                    <p className="text-emerald-700 font-bold mt-1">✓ {t.verdictRate}</p>
+                    <p className="text-slate-500 italic">Chantier : {siteAddress || 'Non spécifié'}</p>
                   </div>
                 </div>
 
+                {/* TABLEAU PRESTATONS */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold uppercase text-slate-700">{t.items_title}</h3>
-                    <button onClick={handleAddLine} className="text-xs text-blue-600 font-bold hover:underline">{t.btn_add_line}</button>
+                    <span className="text-xs font-bold text-slate-600 uppercase">PRESTATIES & MATERIALEN</span>
+                    <button 
+                      onClick={addItem} 
+                      className="no-print text-xs font-bold text-blue-600 hover:text-blue-800"
+                    >
+                      {t.addLigne}
+                    </button>
                   </div>
 
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full text-xs text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-100 border-b">
-                        <th className="p-2">{t.th_desc}</th>
-                        <th className="p-2 w-20 text-center">{t.th_qty}</th>
-                        <th className="p-2 w-28 text-right">{t.th_unit_price}</th>
-                        <th className="p-2 w-28 text-right">{t.th_total}</th>
+                      <tr className="bg-slate-100 text-slate-600 uppercase font-bold">
+                        <th className="p-2.5 border-b">{t.descriptionCol}</th>
+                        <th className="p-2.5 border-b w-20 text-center">{t.qtyCol}</th>
+                        <th className="p-2.5 border-b w-32 text-right">{t.priceCol}</th>
+                        <th className="p-2.5 border-b w-32 text-right">{t.totalCol}</th>
+                        <th className="p-2.5 border-b w-10 no-print"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {quoteLines.map(line => {
-                        const priceNum = parseFloat(line.price) || 0;
-                        const lineTotal = line.qty * priceNum;
+                      {items.map(item => {
+                        const rowTotal = item.qty * (typeof item.unitPrice === 'number' ? item.unitPrice : 0);
                         return (
-                          <tr key={line.id} className="border-b">
+                          <tr key={item.id} className="border-b border-slate-100">
                             <td className="p-2">
-                              <input
-                                type="text"
-                                value={line.desc}
-                                onChange={e => handleUpdateLine(line.id, 'desc', e.target.value)}
-                                className="w-full border p-1 rounded"
+                              <input 
+                                type="text" 
+                                value={item.description} 
+                                onChange={e => updateItem(item.id, 'description', e.target.value)}
+                                className="w-full p-1 border border-slate-200 rounded" 
+                                placeholder="Description..." 
                               />
                             </td>
                             <td className="p-2">
-                              <input
-                                type="number"
-                                min="1"
-                                value={line.qty}
-                                onChange={e => handleUpdateLine(line.id, 'qty', parseInt(e.target.value) || 1)}
-                                className="w-full border p-1 rounded text-center"
+                              <input 
+                                type="number" 
+                                value={item.qty} 
+                                onChange={e => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
+                                className="w-full p-1 border border-slate-200 rounded text-center" 
                               />
                             </td>
                             <td className="p-2">
-                              {/* CHAMP PRIX VIDE PAR DÉFAUT */}
-                              <input
-                                type="number"
-                                placeholder="0.00"
-                                value={line.price}
-                                onChange={e => handleUpdateLine(line.id, 'price', e.target.value)}
-                                className="w-full border p-1 rounded text-right"
+                              <input 
+                                type="number" 
+                                value={item.unitPrice} 
+                                onChange={e => updateItem(item.id, 'unitPrice', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                className="w-full p-1 border border-slate-200 rounded text-right" 
+                                placeholder="0.00" 
                               />
                             </td>
-                            <td className="p-2 text-right font-bold">{lineTotal.toFixed(2)} €</td>
+                            <td className="p-2 text-right font-bold">
+                              {rowTotal.toFixed(2)} €
+                            </td>
+                            <td className="p-2 no-print text-center">
+                              <button onClick={() => removeItem(item.id)} className="text-red-500 font-bold hover:text-red-700">✕</button>
+                            </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
 
-                  <div className="flex flex-col items-end space-y-1 text-xs pt-3">
-                    <div className="flex gap-4">
-                      <span>{t.lbl_subtotal}</span>
-                      <span className="font-bold">{subtotal.toFixed(2)} €</span>
+                  {/* TOTAUX */}
+                  <div className="flex justify-end pt-2">
+                    <div className="w-64 space-y-1 text-xs text-right">
+                      <div className="flex justify-between text-slate-600">
+                        <span>{t.subtotalExcl}</span>
+                        <span className="font-bold">{subtotal.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-700 font-bold">
+                        <span>{t.vatAmount}</span>
+                        <span>0.00 €</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-extrabold text-slate-900 border-t border-slate-300 pt-1">
+                        <span>{t.totalInc}</span>
+                        <span>{subtotal.toFixed(2)} €</span>
+                      </div>
                     </div>
-                    <div className="flex gap-4 text-emerald-700 font-semibold">
-                      <span>Montant TVA ({vatStatus === 'pro' ? '0% Autoliquidation' : '6%'}):</span>
-                      <span>{vatAmount.toFixed(2)} €</span>
-                    </div>
-                    <div className="flex gap-4 text-sm font-bold text-slate-900 border-t pt-1">
-                      <span>TOTAL TTC:</span>
-                      <span>{totalTTC.toFixed(2)} €</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 border p-3 rounded-lg text-xs italic text-slate-600">
-                    <p className="font-bold not-italic text-slate-800">{t.legal_notice_title}</p>
-                    <p>{vatStatus === 'pro' ? t.res_legal_cocontractant : '"TVA 6% de conformité."'}</p>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t flex flex-wrap gap-3 justify-end">
-                  <button onClick={() => alert('Devis enregistré !')} className="bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg">{t.btn_save_quote}</button>
-                  <button onClick={() => window.print()} className="border text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg">{t.btn_print}</button>
-                  <button onClick={() => setStep('invoice')} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg">{t.btn_to_invoice}</button>
+                {/* MENTION LÉGALE DEVIS */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs italic text-slate-600">
+                  <p className="font-bold not-italic text-slate-700 mb-0.5">Verplichte wettelijke vermelding op het document:</p>
+                  {t.verdictLegalText}
                 </div>
-              </section>
+
+                {/* ACTIONS */}
+                <div className="flex flex-wrap justify-between gap-3 pt-4 border-t border-slate-100 no-print">
+                  <div className="flex gap-2">
+                    <button className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg">
+                      {t.btnSaveQuote}
+                    </button>
+                    <button onClick={() => window.print()} className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-lg border border-slate-300">
+                      {t.btnPrintPdf}
+                    </button>
+                  </div>
+                  <button 
+                    onClick={generateInvoice} 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm"
+                  >
+                    {t.btnConvertToInvoice}
+                  </button>
+                </div>
+              </div>
             )}
 
-            {/* MODULE FACTURE */}
-            {step === 'invoice' && (
-              <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
-                <div className="flex justify-between items-center border-b pb-3">
+            {/* ÉCRAN FACTURE */}
+            {step === 'facture' && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6 print:shadow-none print:border-none">
+                <div className="flex justify-between items-start border-b border-slate-200 pb-4">
                   <div>
-                    <span className="text-xs font-bold text-emerald-600 uppercase">{t.invoice_badge}</span>
-                    <h2 className="text-xl font-bold text-slate-900">Facture N° : FAC-2026-001</h2>
-                    <p className="text-xs text-slate-400">{new Date().toLocaleString()}</p>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-extrabold text-slate-900">{t.invoiceTitle}</h2>
+                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                        {t.peppolReady}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">{documentTimestamp}</p>
                   </div>
-                  <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-300">{t.badge_peppol_ready}</span>
+                  <button 
+                    onClick={() => setStep('devis')} 
+                    className="no-print text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg"
+                  >
+                    {t.btnBack}
+                  </button>
                 </div>
 
-                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-wrap items-center justify-between gap-2">
-                  <label className="text-xs font-bold text-emerald-900">{t.lbl_delivery_date}</label>
-                  <input
-                    type="date"
-                    value={deliveryDate}
-                    onChange={e => setDeliveryDate(e.target.value)}
-                    className="border rounded p-1 text-xs bg-white"
+                {/* DATE DE LIVRAISON DES TRAVAUX (SAISIE MANUELLE) */}
+                <div className="bg-emerald-50/80 border border-emerald-200 p-3.5 rounded-xl flex items-center justify-between gap-4">
+                  <label className="text-xs font-extrabold text-emerald-900">{t.completionDateLabel}</label>
+                  <input 
+                    type="date" 
+                    value={completionDate} 
+                    onChange={e => setCompletionDate(e.target.value)}
+                    className="p-1.5 text-xs font-bold border border-emerald-300 rounded bg-white outline-none" 
                   />
                 </div>
 
-                <div className="text-xs bg-slate-50 p-4 rounded-xl border space-y-2">
-                  <p><strong>Client :</strong> {clientName}</p>
-                  <p><strong>Chantier :</strong> {siteAddress || 'Non spécifié'}</p>
-                  <p><strong>Montant HTVA :</strong> {subtotal.toFixed(2)} €</p>
-                  <p><strong>TVA :</strong> {vatAmount.toFixed(2)} €</p>
-                  <p className="text-sm font-bold text-slate-900"><strong>TOTAL TTC :</strong> {totalTTC.toFixed(2)} €</p>
+                {/* RAPPEL CLIENT ET MONTANTS */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-xs">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p><span className="font-bold">Client :</span> {clientName || 'Vicernant (NV)'}</p>
+                      <p><span className="font-bold">Chantier :</span> {siteAddress || 'Non spécifié'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p><span className="font-bold">Montant HTVA :</span> {subtotal.toFixed(2)} €</p>
+                      <p><span className="font-bold">TVA :</span> 0.00 €</p>
+                      <p className="text-sm font-extrabold text-slate-900 mt-1"><span className="font-bold">TOTAL TTC :</span> {subtotal.toFixed(2)} €</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-4 border-t flex flex-wrap gap-3 justify-end">
-                  <button onClick={() => alert('Facture enregistrée !')} className="bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg">{t.btn_save_inv}</button>
-                  <button onClick={() => window.print()} className="border text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg">{t.btn_print}</button>
-                  <button onClick={() => alert('Envoyé sur le réseau Peppol !')} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg flex items-center gap-2">
-                    <span>🌐</span> <span>{t.btn_peppol}</span>
+                {/* MENTION LÉGALE FACTURE */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs italic text-slate-600">
+                  <p className="font-bold not-italic text-slate-700 mb-0.5">Verplichte wettelijke vermelding op het document:</p>
+                  {t.verdictLegalText}
+                </div>
+
+                {/* ACTIONS FACTURE / PEPPOL */}
+                <div className="flex flex-wrap justify-between gap-3 pt-4 border-t border-slate-100 no-print">
+                  <div className="flex gap-2">
+                    <button className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg">
+                      {t.btnSaveInvoice}
+                    </button>
+                    <button onClick={() => window.print()} className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-lg border border-slate-300">
+                      {t.btnPrintPdf}
+                    </button>
+                  </div>
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5">
+                    {t.btnSendPeppol}
                   </button>
                 </div>
-              </section>
+              </div>
             )}
 
           </div>
 
-          {/* HISTORIQUE DROITE */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 space-y-3 sticky top-6">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span>📜</span> <span>{t.history_title}</span>
+          {/* COLONNE DROITE : HISTORIQUE LATÉRAL (MASQUÉ À L'IMPRESSION) */}
+          <div className="no-print">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4 sticky top-6">
+              <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                {t.historyTitle}
               </h3>
-              <div className="text-xs text-slate-500 space-y-2">
-                {history.length === 0 ? (
-                  <p className="italic text-slate-400">{t.history_empty}</p>
-                ) : (
-                  history.map((item, idx) => (
-                    <div key={idx} className="p-2 bg-slate-50 border rounded">
-                      <strong className="text-slate-800">{item.name}</strong> — {item.result}
-                      <br />
-                      <span className="text-slate-400 text-[10px]">{item.time}</span>
+              {history.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">{t.noHistory}</p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {history.map((h, i) => (
+                    <div key={i} className="p-3 bg-slate-50 border border-slate-100 rounded-lg text-xs space-y-1">
+                      <div className="flex justify-between font-bold text-slate-800">
+                        <span>{h.name}</span>
+                        <span className="text-slate-400 font-normal text-[10px]">{h.time}</span>
+                      </div>
+                      <p className="text-emerald-700 font-medium text-[11px]">— {h.result}</p>
                     </div>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </main>
+
+        </div>
+
       </div>
     </div>
   );
