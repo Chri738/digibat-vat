@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export type Language = 'FR' | 'NL';
 
-interface PrestationLine {
+export interface PrestationLine {
   id: string;
   description: string;
   amount: number | '';
   vatRate: 0 | 6 | 21;
 }
 
-interface HistoryLog {
+export interface HistoryLog {
   timestamp: string;
   actionFR: string;
   actionNL: string;
 }
 
-interface Props {
+export interface DevisFactureProps {
   lang: Language;
   defaultVatRate?: 0 | 6 | 21;
   legalMention: string;
@@ -56,10 +56,8 @@ const TRANSLATIONS = {
     legalNoticeTitle: "Mention Légale TVA Obligatoire",
     historyTitle: "Historique & Traçabilité (Masqué à l'impression / Peppol)",
     
-    btnSave: "Enregistrer",
     btnPrint: "Imprimer / Exporter PDF",
     btnConvertToInvoice: "Convertir en facture",
-    btnSaveInvoice: "Enregistrer la facture",
     btnPeppol: "Transférer via Peppol",
     btnBack: "Retour au Régime TVA",
     
@@ -96,10 +94,8 @@ const TRANSLATIONS = {
     legalNoticeTitle: "Verplichte Btw-vermelding",
     historyTitle: "Historiek & Traceerbaarheid (Verborgen bij afdrukken / Peppol)",
     
-    btnSave: "Opslaan",
     btnPrint: "Afdrukken / Opslaan",
     btnConvertToInvoice: "Omzetten naar factuur",
-    btnSaveInvoice: "Factuur opslaan",
     btnPeppol: "Verzenden via Peppol",
     btnBack: "Terug naar Btw-regeling",
 
@@ -108,7 +104,7 @@ const TRANSLATIONS = {
   }
 };
 
-export const DevisFactureScreen: React.FC<Props> = ({
+export const DevisFactureScreen: React.FC<DevisFactureProps> = ({
   lang,
   defaultVatRate = 6,
   legalMention,
@@ -119,57 +115,47 @@ export const DevisFactureScreen: React.FC<Props> = ({
 }) => {
   const t = TRANSLATIONS[lang];
 
-  // Mode : 'quote' (Devis) ou 'invoice' (Facture)
   const [docMode, setDocMode] = useState<'quote' | 'invoice'>('quote');
-
-  // Horodatage automatique à la création du devis
   const [createdAt] = useState<string>(() => new Date().toLocaleString(lang === 'FR' ? 'fr-BE' : 'nl-BE'));
   const [quoteRefNumber] = useState<string>(() => `DEV-${Date.now().toString().slice(-6)}`);
   const [invoiceRefNumber, setInvoiceRefNumber] = useState<string>('');
 
-  // RÈGLE : Saisie neutre (champs vierges par défaut)
   const [contractorName, setContractorName] = useState<string>('');
   const [clientName, setClientName] = useState<string>(initialClientName);
   const [clientVat, setClientVat] = useState<string>(initialClientVat);
   const [siteAddress, setSiteAddress] = useState<string>(initialSiteAddress);
-  
-  // Champ spécifique Facture (saisie manuelle)
   const [deliveryDate, setDeliveryDate] = useState<string>('');
 
-  // Lignes de prestations neutres / vierges
   const [lines, setLines] = useState<PrestationLine[]>([
     { id: '1', description: '', amount: '', vatRate: defaultVatRate }
   ]);
 
-  // Historique des modifications
   const [history, setHistory] = useState<HistoryLog[]>([]);
+
+  const addHistoryLog = useCallback((actionFR: string, actionNL: string) => {
+    const timestamp = new Date().toLocaleString(lang === 'FR' ? 'fr-BE' : 'nl-BE');
+    setHistory(prev => [...prev, { timestamp, actionFR, actionNL }]);
+  }, [lang]);
 
   useEffect(() => {
     addHistoryLog(`Création du devis ${quoteRefNumber}`, `Aanmaak van offerte ${quoteRefNumber}`);
-  }, []);
+  }, [addHistoryLog, quoteRefNumber]);
 
-  const addHistoryLog = (actionFR: string, actionNL: string) => {
-    const timestamp = new Date().toLocaleString(lang === 'FR' ? 'fr-BE' : 'nl-BE');
-    setHistory(prev => [...prev, { timestamp, actionFR, actionNL }]);
-  };
-
-  // --- GESTION DES LIGNES DYNAMIQUES ---
   const handleAddLine = () => {
-    setLines([
-      ...lines,
+    setLines(prev => [
+      ...prev,
       { id: Date.now().toString(), description: '', amount: '', vatRate: defaultVatRate }
     ]);
   };
 
   const handleRemoveLine = (id: string) => {
-    setLines(lines.filter(l => l.id !== id));
+    setLines(prev => prev.filter(l => l.id !== id));
   };
 
-  const handleUpdateLine = (id: string, field: keyof PrestationLine, value: any) => {
-    setLines(lines.map(l => l.id === id ? { ...l, [field]: value } : l));
+  const handleUpdateLine = (id: string, field: keyof PrestationLine, value: string | number) => {
+    setLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
   };
 
-  // --- CALCULS VENTILÉS HT & TVA ---
   const ht6 = lines.filter(l => l.vatRate === 6).reduce((acc, l) => acc + (Number(l.amount) || 0), 0);
   const tva6 = ht6 * 0.06;
 
@@ -183,7 +169,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
   const totalTVA = tva6 + tva21 + tva0;
   const totalTTC = totalHT + totalTVA;
 
-  // --- ACTIONS ---
   const handleConvertToInvoice = () => {
     const invNum = `FAC-${Date.now().toString().slice(-6)}`;
     setInvoiceRefNumber(invNum);
@@ -210,7 +195,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
       
-      {/* En-tête du Document */}
       <div style={{ border: '2px solid #1e3a8a', padding: '20px', borderRadius: '8px', background: '#fff' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #1e3a8a', paddingBottom: '15px' }}>
@@ -232,10 +216,7 @@ export const DevisFactureScreen: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Formulaire des Coordonnées (Champs neutres / vierges) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
-          
-          {/* Colonne Gauche : Entrepreneur & Chantier */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a', display: 'block' }}>
@@ -263,7 +244,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
               />
             </div>
 
-            {/* Champ spécifique Facture */}
             {docMode === 'invoice' && (
               <div style={{ background: '#fef3c7', padding: '8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
                 <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#92400e', display: 'block' }}>
@@ -279,7 +259,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Colonne Droite : Client */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a', display: 'block' }}>
@@ -307,10 +286,8 @@ export const DevisFactureScreen: React.FC<Props> = ({
               />
             </div>
           </div>
-
         </div>
 
-        {/* Tableau des Lignes de Prestations */}
         <div style={{ marginTop: '25px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
@@ -379,7 +356,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Ventilation des Sous-Totaux & Total Général */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
           <div style={{ width: '320px', fontSize: '12px', background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
             
@@ -442,7 +418,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Mention Légale Législative */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px dashed #cbd5e1', fontSize: '11px', color: '#334155', fontStyle: 'italic' }}>
           <strong>{t.legalNoticeTitle} :</strong>
           <p style={{ margin: '4px 0 0 0' }}>{legalMention}</p>
@@ -450,7 +425,6 @@ export const DevisFactureScreen: React.FC<Props> = ({
 
       </div>
 
-      {/* Historique & Traçabilité (Strictement masqué à l'impression / Peppol) */}
       <div className="no-print history-block" style={{ marginTop: '25px', background: '#f1f5f9', padding: '15px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
         <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#475569' }}>📋 {t.historyTitle}</h4>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '11px', color: '#64748b' }}>
@@ -462,9 +436,7 @@ export const DevisFactureScreen: React.FC<Props> = ({
         </ul>
       </div>
 
-      {/* Boutons d'action (Masqués à l'impression) */}
       <div className="no-print" style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
-        
         {onBackToStep3 && (
           <button onClick={onBackToStep3} style={{ padding: '10px 15px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             ← {t.btnBack}
@@ -484,10 +456,8 @@ export const DevisFactureScreen: React.FC<Props> = ({
             🌐 {t.btnPeppol}
           </button>
         )}
-
       </div>
 
-      {/* Règles CSS d'Impression & Peppol (Masquage Sécurisé) */}
       <style>{`
         @media print {
           .no-print, .history-block {
