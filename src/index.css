@@ -63,3 +63,21 @@
 .animate-pulse-soft {
   animation: pulse-soft 1.4s ease-in-out infinite;
 }
+@media print {
+  .no-print,
+  .history-sidebar,
+  .btn-action,
+  header,
+  nav {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    padding: 0 !important;
+  }
+  .document-container {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+}
