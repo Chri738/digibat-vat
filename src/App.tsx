@@ -1,106 +1,157 @@
-Vous êtes un expert React / TypeScript / Supabase. Votre mission est de refactoriser et compléter le code de l'application `digibat-vat` (notamment `src/App.tsx`, `src/types.ts` et `src/supabase.ts`) en respectant scrupuleusement le cahier des charges métier et fiscal belge (2025-2026).
+import React, { useState } from 'react';
+import { DevisFactureScreen } from './components/DevisFactureScreen';
 
----
+export default function App() {
+  const [step, setStep] = useState<number>(1);
+  const [lang, setLang] = useState<'FR' | 'NL'>('FR');
+  
+  // Données du formulaire
+  const [clientType, setClientType] = useState<'b2c' | 'b2b'>('b2b');
+  const [clientName, setClientName] = useState<string>('Vicernant(NV)');
+  const [clientVat, setClientVat] = useState<string>('BE 0400.075.312');
+  const [siteAddress, setSiteAddress] = useState<string>('');
+  
+  // Régime calculé à l'étape 3
+  const [appliedVatRate] = useState<0 | 6 | 21>(0);
+  const [legalNotice] = useState<string>(
+    "Autoliquidation : En l'absence de contestation par écrit, dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître qu'il est un assujetti tenu au dépôt de déclarations périodiques et que les travaux immobiliers sont affectés à son activité professionnelle (Art. 20 KB n° 1)."
+  );
 
-## 🛠️ ARCHITECTURE DES FICHIERS
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '20px' }}>
+      
+      {/* Sélecteur de langue */}
+      <div style={{ maxWidth: '800px', margin: '0 auto 10px auto', textAlign: 'right' }}>
+        <button 
+          onClick={() => setLang('FR')} 
+          style={{ fontWeight: lang === 'FR' ? 'bold' : 'normal', marginRight: '8px', cursor: 'pointer' }}>
+          FR
+        </button>
+        <button 
+          onClick={() => setLang('NL')} 
+          style={{ fontWeight: lang === 'NL' ? 'bold' : 'normal', cursor: 'pointer' }}>
+          NL
+        </button>
+      </div>
 
-### 1. `src/types.ts`
-Définir les types TypeScript stricts pour :
-- `Language`: `'FR' | 'NL'`
-- `ClientType`: `'B2B' | 'B2C'`
-- `BuildingAge`: `'UNDER_10' | 'OVER_EQUAL_10'`
-- `BuildingUsage`: `'ONLY_PRIVATE' | 'MAJORITY_PRIVATE' | 'ONLY_PRO' | 'MIXED'`
-- `WorkNature`: `'RENOVATION' | 'HEAT_PUMP' | 'GARDENING' | 'SOLAR_INSULATION' | 'DEMOLITION_BUILD'`
-- `InvoiceLine`: `{ id: string; description: string; amount: number | ''; vatRate: 0 | 6 | 21 }`
-- `ClientProfile`: `{ name: string; vatNumber: string; country: string; type: ClientType; isViesValid: boolean }`
-- `ChantierInfo`: `{ age: BuildingAge; usage: BuildingUsage; surfaceOver200m2?: boolean; nature: WorkNature; address: string; deliveryDate?: string }`
-- `DocumentState`: Structure globale pour le Devis / Facture (horodatage, lignes, sous-totaux HT 6%, HT 21%, TVA 6%, TVA 21%, Total TTC, historique).
+      {step < 4 && (
+        <div style={{ maxWidth: '800px', margin: '0 auto', background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <h1 style={{ fontSize: '20px', color: '#1e3a8a', marginBottom: '20px' }}>
+            Détermination TVA « Travaux immobiliers » — Belgique 2025-2026
+          </h1>
 
----
+          {/* ÉTAPE 1 */}
+          {step === 1 && (
+            <div>
+              <h3>Étape 1 : Profil Client</h3>
+              <div style={{ margin: '15px 0' }}>
+                <label>
+                  <input 
+                    type="radio" 
+                    name="clientType" 
+                    checked={clientType === 'b2c'} 
+                    onChange={() => setClientType('b2c')} 
+                  /> Particular / Non-assujetti (B2C)
+                </label>
+                <label style={{ marginLeft: '15px' }}>
+                  <input 
+                    type="radio" 
+                    name="clientType" 
+                    checked={clientType === 'b2b'} 
+                    onChange={() => setClientType('b2b')} 
+                  /> Assujetti à la TVA (B2B)
+                </label>
+              </div>
 
-## 📋 RÈGLES DE GESTION & MOTEUR FISCAL (À IMPLÉMENTER DANS `App.tsx`)
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
+                <label>
+                  Nom / Raison sociale :
+                  <input 
+                    type="text" 
+                    value={clientName} 
+                    onChange={(e) => setClientName(e.target.value)} 
+                    style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                  />
+                </label>
+                <label>
+                  Numéro TVA client :
+                  <input 
+                    type="text" 
+                    value={clientVat} 
+                    onChange={(e) => setClientVat(e.target.value)} 
+                    style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                  />
+                </label>
+                <label>
+                  Adresse du chantier :
+                  <input 
+                    type="text" 
+                    value={siteAddress} 
+                    onChange={(e) => setSiteAddress(e.target.value)} 
+                    placeholder="Rue, N°, Code Postal, Ville"
+                    style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                  />
+                </label>
+              </div>
 
-### ÉTAPE 1 – Profil Client (`Klantprofiel`)
-1. **Langue :** Sélecteur FR / NL modifiant instantanément l'intégralité du vocabulaire de l'application via un dictionnaire de traduction miroir strict.
-2. **Pays UE :** Liste complète `EU_COUNTRIES` (27 pays) affichée dans la langue sélectionnée.
-3. **Validation VIES (API VIES) :**
-   - Si `ClientType === 'B2B'` : L'accès à l'Étape 2 est **bloqué** tant que le N° de TVA n'est pas validé. Afficher le badge `VIES Validated (Oké)` en vert ou le message d'erreur dans la langue sélectionnée.
-   - Si `ClientType === 'B2C'` : Accès direct à l'Étape 2 sans contrôle VIES.
+              <button 
+                onClick={() => setStep(3)} 
+                style={{ marginTop: '20px', padding: '10px 20px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                Passer à l'Étape 3 →
+              </button>
+            </div>
+          )}
 
----
+          {/* ÉTAPE 3 */}
+          {step === 3 && (
+            <div>
+              <h3>Étape 3 : Régime TVA & Attestation Légale</h3>
+              
+              <div style={{ border: '2px solid #2563eb', padding: '15px', borderRadius: '6px', background: '#eff6ff', marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#1e40af' }}>RÉGIME TVA APPLICABLE</h4>
+                <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#1d4ed8', margin: 0 }}>
+                  Autoliquidation (Co-contractant) (0% (Autoliquidation / Co-contractant))
+                </p>
+              </div>
 
-### ÉTAPE 2 – Bien Immobilier & Chantier
-1. **Âge bâtiment :** `< 10 ans` ou `≥ 10 ans`.
-2. **Usage :** 
-   - Options : `100% Privé`, `> 50% Privé`, `Exclusif Pro`, `Mixte (Privé + Pro)`.
-   - **Règle :** L'activation du choix `Mixte` déclenche un champ/checkbox obligatoire pour vérifier le critère de surface minimale de 200 m².
-3. **Nature des travaux :**
-   - `Rénovation standard`
-   - `Pompe à chaleur`
-   - `Entretien courant / Jardinage`
-   - `Panneaux solaires & Isolation`
-   - `Démolition et/ou Construction`
-4. **Saisie neutre :** La cellule `Adresse du chantier / bien` reste **strictement vierge par défaut** (saisie manuelle).
+              <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                <strong style={{ fontSize: '13px' }}>📜 Mention légale obligatoire à inscrire sur la facture :</strong>
+                <blockquote style={{ fontStyle: 'italic', color: '#475569', margin: '10px 0 0 0', paddingLeft: '10px', borderLeft: '3px solid #cbd5e1' }}>
+                  « {legalNotice} »
+                </blockquote>
+              </div>
 
----
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => setStep(1)} 
+                  style={{ padding: '10px 15px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                  Retour Étape 1
+                </button>
 
-### ÉTAPE 3 – Moteur Fiscal TVA Belge (2025-2026 & AR 29/03/2022)
-Implémenter la fonction de calcul du taux par défaut et des mentions obligatoires :
+                <button 
+                  onClick={() => setStep(4)} 
+                  style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  📄 Générer le Devis / la Facture →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-1. **Régime B2B :**
-   - Taux TVA = 0% (Autoliquidation).
-   - Mention légale automatique : *"Autoliquidation - Art. 20, KB nr. 1 / Btw verlegd - KB nr. 1, art. 20"*.
+      {/* ÉTAPE 4 : ÉCRAN DEVIS / FACTURE */}
+      {step === 4 && (
+        <DevisFactureScreen 
+          lang={lang}
+          defaultVatRate={appliedVatRate}
+          legalMention={legalNotice}
+          initialClientName={clientName}
+          initialClientVat={clientVat}
+          initialSiteAddress={siteAddress}
+          onBackToStep3={() => setStep(3)}
+        />
+      )}
 
-2. **Régime B2C :**
-   - **Entretien courant / Jardinage :** Toujours **21%** (peu importe l'âge du bâtiment).
-   - **Pompes à chaleur (AR 29/03/2022) :** Toujours **6%** (même si le bâtiment a < 10 ans).
-   - **Panneaux solaires & Isolation :** 6% si `≥ 10 ans`, 21% si `< 10 ans`.
-   - **Rénovation standard :** 6% si `≥ 10 ans`, 21% si `< 10 ans`.
-   - **Démolition / Construction :** 21%.
-   - **Clause de présomption (6%) :** Générer automatiquement la mention obligatoire d'exonération/présomption d'un mois sur les documents si le taux 6% est appliqué.
-
-3. **Usage Mixte (Règle Hoofdzaak) :**
-   - Si `Pro > Privé` : Ventilation obligatoire (21% pro / 6% privé).
-   - Si `Pro ≤ Privé` : 6% sur la totalité si l'affectation principale est le domicile privé (générer la mention explicite de décharge pour l'entrepreneur).
-
----
-
-## 📝 ÉCRANS DEVIS & FACTURE
-
-1. **Saisie Neutre :**
-   - Nom / Raison sociale, N° TVA, Adresse chantier, Entrepreneur et Lignes de prestation doivent être **vides par défaut**.
-   - Permettre l'ajout et la suppression dynamique de lignes avec bascule manuelle possible du taux de TVA (6% ou 21%) ligne par ligne.
-
-2. **Ventilation des sous-totaux en bas de document :**
-   - Total HT (6%) + TVA (6%)
-   - Total HT (21%) + TVA (21%)
-   - Total Général TTC
-
-3. **Écran Devis :**
-   - Horodatage automatique à la création (`new Date()`).
-   - Boutons : `[Enregistrer]`, `[Imprimer]`, `[Convertir en facture]`.
-
-4. **Écran Facture :**
-   - Reprise intégrale des données du devis.
-   - Champ obligatoire et vierge par défaut : `Date de livraison du chantier` (`Opleveringsdatum van de werken`).
-   - Boutons : `[Enregistrer la facture]`, `[Imprimer]`, `[Transférer via Peppol]`.
-
-5. **Sécurité CSS & Export PDF :**
-   - Utiliser des règles `@media print` pour **masquer systématiquement l'historique** des modifications à l'impression et dans le payload exporté vers Peppol.
-
----
-
-## 🌐 DICTIONNAIRE MULTILINGUE (FR / NL)
-
-Garantir le miroir linguistique strict 1:1 pour l'ensemble de l'UI (titres, boutons, statuts VIES, mentions légales).
-
-Exemples de clés :
-- FR: *"Détermination TVA « Travaux immobiliers » — Belgique 2025-2026"* ↔ NL: *"Btw-bepaling « Werken in onroerende staat » — België 2025-2026"*
-- FR: *"Autoliquidation (B2B)"* ↔ NL: *"Btw verlegd - KB nr. 1, art. 20"*
-- FR: *"Convertir en facture"* ↔ NL: *"Omzetten naar factuur"*
-- FR: *"Transférer via Peppol"* ↔ NL: *"Verzenden via Peppol"*
-
----
-
-## 🎯 LIVRABLES ATTENDUS
-Fournir un code React / TypeScript propre, modulaire et typé pour `src/types.ts`, `src/App.tsx` et l'intégration Supabase (`src/supabase.ts`) pour la sauvegarde des devis et factures.
+    </div>
+  );
+}
