@@ -57,15 +57,30 @@ const TRANSLATIONS = {
     usagePrive50: "> 50% Privé",
     usagePro: "Exclusif Pro",
     usageMixte: "Mixte (Privé + Pro)",
-    surface200Label: "Superficie de la partie pro ≥ 200 m² ?",
-    yes: "Oui",
-    no: "Non",
+    
+    // Saisie Surfaces Mixte (Minimum 200 m²)
+    surfacePriveLabel: "Superficie Privée (m²)",
+    surfaceProLabel: "Superficie Professionnelle (m²)",
+    totalSurfaceLabel: "Superficie Totale du bâtiment",
+    minSurfaceOk: "✓ Superficie totale ≥ 200 m² (Minimum requis respecté)",
+    minSurfaceKo: "⚠️ Superficie totale < 200 m² (Le bâtiment doit avoir une superficie minimale de 200 m²)",
+
     workLabel: "Nature des travaux",
     workRenov: "Rénovation standard",
     workHeatPump: "Pompe à chaleur",
     workGarden: "Entretien courant / Jardinage",
     workSolar: "Panneaux solaires & Isolation",
     workDemolition: "Démolition et/ou Construction",
+
+    // Travaux extérieurs / Espaces verts
+    outdoorTitle: "🌿 TRAVAUX EXTÉRIEURS / ESPACES VERTS (OPTIONNEL)",
+    outdoorSubtitle: "Cochez uniquement si la prestation porte sur l'entretien ou l'aménagement d'espaces verts.",
+    outdoorNoneTitle: "Ne s'applique pas",
+    outdoorGardenTitle: "Entretien courant",
+    outdoorGardenSub: "(Tonte, taille, plantes...)",
+    outdoorLandscapingTitle: "Aménagement & Gros travaux",
+    outdoorLandscapingSub: "(Terrasse, pavage...)",
+
     siteAddressLabel: "Adresse du chantier / bien",
     previousStep: "Retour Étape 1",
     toStep3: "Calculer le régime TVA (Étape 3)"
@@ -94,15 +109,30 @@ const TRANSLATIONS = {
     usagePrive50: "> 50% Privé",
     usagePro: "Exclusief Beroepsmatig",
     usageMixte: "Gemengd (Privé + Pro)",
-    surface200Label: "Oppervlakte beroepsgedeelte ≥ 200 m²?",
-    yes: "Ja",
-    no: "Nee",
+    
+    // Saisie Surfaces Mixte (NL)
+    surfacePriveLabel: "Privé-oppervlakte (m²)",
+    surfaceProLabel: "Beroepsmatige oppervlakte (m²)",
+    totalSurfaceLabel: "Totale oppervlakte van het gebouw",
+    minSurfaceOk: "✓ Totale oppervlakte ≥ 200 m² (Vereiste minimumoppervlakte bereikt)",
+    minSurfaceKo: "⚠️ Totale oppervlakte < 200 m² (Het gebouw moet een minimale oppervlakte van 200 m² hebben)",
+
     workLabel: "Aard van de werken",
     workRenov: "Standaard renovatie",
     workHeatPump: "Warmtepomp",
     workGarden: "Lopend onderhoud / Tuinonderhoud",
     workSolar: "Zonnepanelen & Isolatie",
     workDemolition: "Sloop en/of Bouw",
+
+    // Travaux extérieurs / Espaces verts (NL)
+    outdoorTitle: "🌿 BUITENWERKEN / GROENVOORZIENINGEN (OPTIONEEL)",
+    outdoorSubtitle: "Vink alleen aan als de dienst betrekking heeft op het onderhoud of de aanleg van groene ruimten.",
+    outdoorNoneTitle: "Niet van toepassing",
+    outdoorGardenTitle: "Lopend onderhoud",
+    outdoorGardenSub: "(Maaien, snoeien, planten...)",
+    outdoorLandscapingTitle: "Aanleg & Grote werken",
+    outdoorLandscapingSub: "(Terras, bestrating...)",
+
     siteAddressLabel: "Adres van de werf / bouwwerf",
     previousStep: "Terug naar Stap 1",
     toStep3: "Btw-regeling berekenen (Stap 3)"
@@ -113,24 +143,32 @@ export default function App() {
   const [lang, setLang] = useState<'FR' | 'NL'>('FR');
   const t = TRANSLATIONS[lang];
 
-  // Gestion des étapes (1 ou 2)
+  // Nav Étape (1 ou 2)
   const [step, setStep] = useState<1 | 2>(1);
 
-  // --- ÉTAPE 1 : ÉTATS (Champs vierges par défaut) ---
+  // --- ÉTAPE 1 : ÉTATS ---
   const [clientType, setClientType] = useState<'B2B' | 'B2C'>('B2C');
   const [clientName, setClientName] = useState('');
   const [clientVat, setClientVat] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('BE');
   const [viesStatus, setViesStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
 
-  // --- ÉTAPE 2 : ÉTATS (Champs neutres) ---
+  // --- ÉTAPE 2 : ÉTATS ---
   const [buildingAge, setBuildingAge] = useState<'over10' | 'under10'>('over10');
   const [buildingUsage, setBuildingUsage] = useState<'prive100' | 'prive50' | 'pro' | 'mixte'>('prive100');
-  const [isSurfaceOver200, setIsSurfaceOver200] = useState<boolean>(false);
+  
+  // Surfaces pour l'usage mixte (saisie libre par l'entrepreneur)
+  const [surfacePrive, setSurfacePrive] = useState<number | ''>('');
+  const [surfacePro, setSurfacePro] = useState<number | ''>('');
+
   const [workType, setWorkType] = useState<'renov' | 'heatpump' | 'garden' | 'solar' | 'demolition'>('renov');
+  
+  // Travaux Extérieurs / Espaces verts (Optionnel)
+  const [outdoorOption, setOutdoorOption] = useState<'none' | 'garden' | 'landscaping'>('none');
+
   const [siteAddress, setSiteAddress] = useState('');
 
-  // Simulation / Vérification VIES
+  // Simulation VIES
   const handleViesCheck = () => {
     if (clientVat.trim().length > 5) {
       setViesStatus('valid');
@@ -141,8 +179,14 @@ export default function App() {
 
   const canGoToStep2 = clientType === 'B2C' || viesStatus === 'valid';
 
+  // Calculs automatiques des superficies
+  const numPrive = Number(surfacePrive) || 0;
+  const numPro = Number(surfacePro) || 0;
+  const totalSurface = numPrive + numPro;
+  const isTotalOver200 = totalSurface >= 200;
+
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '850px', margin: '0 auto' }}>
       {/* Sélecteur de Langue */}
       <div style={{ textAlign: 'right', marginBottom: '10px' }}>
         <button 
@@ -275,10 +319,10 @@ export default function App() {
         <div>
           <h2>{t.step2Title}</h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '500px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             {/* Âge du bâtiment */}
-            <div>
+            <div style={{ maxWidth: '500px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>
                 {t.ageLabel}
               </label>
@@ -292,7 +336,7 @@ export default function App() {
             </div>
 
             {/* Usage du bâtiment */}
-            <div>
+            <div style={{ maxWidth: '500px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>
                 {t.usageLabel}
               </label>
@@ -307,33 +351,52 @@ export default function App() {
               </select>
             </div>
 
-            {/* Condition 200 m² si Mixte */}
+            {/* SAISIE DES SUPERFICIES SI USAGE MIXTE (MINIMUM 200 m²) */}
             {buildingUsage === 'mixte' && (
-              <div style={{ background: '#f1f5f9', padding: '10px', borderRadius: '4px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>
-                  {t.surface200Label}
-                </label>
-                <label style={{ marginRight: '15px', cursor: 'pointer' }}>
-                  <input 
-                    type="radio" 
-                    name="surface200" 
-                    checked={isSurfaceOver200} 
-                    onChange={() => setIsSurfaceOver200(true)} 
-                  /> {t.yes}
-                </label>
-                <label style={{ cursor: 'pointer' }}>
-                  <input 
-                    type="radio" 
-                    name="surface200" 
-                    checked={!isSurfaceOver200} 
-                    onChange={() => setIsSurfaceOver200(false)} 
-                  /> {t.no}
-                </label>
+              <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '6px', maxWidth: '550px' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#1e3a8a', fontSize: '14px' }}>
+                  Répartition des superficies (Usage Mixte — Minimum 200 m²)
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold' }}>{t.surfacePriveLabel}</label>
+                    <input 
+                      type="number" 
+                      value={surfacePrive} 
+                      onChange={(e) => setSurfacePrive(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="ex: 120"
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', marginTop: '4px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold' }}>{t.surfaceProLabel}</label>
+                    <input 
+                      type="number" 
+                      value={surfacePro} 
+                      onChange={(e) => setSurfacePro(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="ex: 100"
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', marginTop: '4px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Validation du Seuil de 200 m² sur la Superficie Totale */}
+                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '13px' }}>
+                  <p style={{ margin: '0 0 5px 0' }}>
+                    <strong>{t.totalSurfaceLabel} :</strong> {totalSurface} m² 
+                    {totalSurface > 0 && ` (Privé : ${Math.round((numPrive/totalSurface)*100)}% | Pro : ${Math.round((numPro/totalSurface)*100)}%)`}
+                  </p>
+                  {totalSurface > 0 && (
+                    <p style={{ margin: 0, fontWeight: 'bold', color: isTotalOver200 ? '#16a34a' : '#dc2626' }}>
+                      {isTotalOver200 ? t.minSurfaceOk : t.minSurfaceKo}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Nature des travaux */}
-            <div>
+            <div style={{ maxWidth: '500px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>
                 {t.workLabel}
               </label>
@@ -349,8 +412,69 @@ export default function App() {
               </select>
             </div>
 
+            {/* SECTIONS TRAVAUX EXTÉRIEURS / ESPACES VERTS (OPTIONNEL) */}
+            <div style={{ marginTop: '10px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#15803d', marginBottom: '2px' }}>
+                {t.outdoorTitle}
+              </label>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px 0' }}>
+                {t.outdoorSubtitle}
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                
+                {/* Option 1 : Ne s'applique pas */}
+                <div 
+                  onClick={() => setOutdoorOption('none')}
+                  style={{
+                    border: outdoorOption === 'none' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: outdoorOption === 'none' ? '#eff6ff' : '#fff'
+                  }}>
+                  <div style={{ fontSize: '24px', marginBottom: '5px' }}>🚫</div>
+                  <strong style={{ fontSize: '13px', color: '#1e293b' }}>{t.outdoorNoneTitle}</strong>
+                </div>
+
+                {/* Option 2 : Entretien courant */}
+                <div 
+                  onClick={() => setOutdoorOption('garden')}
+                  style={{
+                    border: outdoorOption === 'garden' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: outdoorOption === 'garden' ? '#eff6ff' : '#fff'
+                  }}>
+                  <div style={{ fontSize: '24px', marginBottom: '5px' }}>🌱</div>
+                  <strong style={{ fontSize: '13px', color: '#1e293b' }}>{t.outdoorGardenTitle}</strong>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{t.outdoorGardenSub}</div>
+                </div>
+
+                {/* Option 3 : Aménagement & Gros travaux */}
+                <div 
+                  onClick={() => setOutdoorOption('landscaping')}
+                  style={{
+                    border: outdoorOption === 'landscaping' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: outdoorOption === 'landscaping' ? '#eff6ff' : '#fff'
+                  }}>
+                  <div style={{ fontSize: '24px', marginBottom: '5px' }}>🏗️</div>
+                  <strong style={{ fontSize: '13px', color: '#1e293b' }}>{t.outdoorLandscapingTitle}</strong>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{t.outdoorLandscapingSub}</div>
+                </div>
+
+              </div>
+            </div>
+
             {/* Adresse du Chantier */}
-            <div>
+            <div style={{ maxWidth: '500px', margin: '10px 0' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px', textAlign: 'center' }}>
                 {t.siteAddressLabel}
               </label>
@@ -364,14 +488,14 @@ export default function App() {
             </div>
 
             {/* Navigation */}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', maxWidth: '500px' }}>
               <button 
                 onClick={() => setStep(1)}
                 style={{ flex: 1, padding: '10px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                 {t.previousStep}
               </button>
               <button 
-                onClick={() => alert("Étape 3 : Moteur fiscal disponible à l'étape suivante !")}
+                onClick={() => alert("Étape 3 : Prêt pour le moteur fiscal !")}
                 style={{ flex: 1, padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
                 {t.toStep3}
               </button>
