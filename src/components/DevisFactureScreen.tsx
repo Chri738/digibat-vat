@@ -12,8 +12,8 @@ export default function App() {
   const [siteAddress, setSiteAddress] = useState<string>('');
   
   // Régime calculé à l'étape 3
-  const [appliedVatRate, setAppliedVatRate] = useState<0 | 6 | 21>(0);
-  const [legalNotice, setLegalNotice] = useState<string>(
+  const [appliedVatRate] = useState<0 | 6 | 21>(0);
+  const [legalNotice] = useState<string>(
     "Autoliquidation : En l'absence de contestation par écrit, dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître qu'il est un assujetti tenu au dépôt de déclarations périodiques et que les travaux immobiliers sont affectés à son activité professionnelle (Art. 20 KB n° 1)."
   );
 
@@ -128,7 +128,6 @@ export default function App() {
                   Retour Étape 1
                 </button>
 
-                {/* BOUTON POUR PASSER A L'ÉCRAN DEVIS / FACTURE */}
                 <button 
                   onClick={() => setStep(4)} 
                   style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
@@ -140,7 +139,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ÉTAPE 4 : ECRAN DEVIS / FACTURE */}
+      {/* ÉTAPE 4 : ÉCRAN DEVIS / FACTURE */}
       {step === 4 && (
         <DevisFactureScreen 
           lang={lang}
