@@ -1,83 +1,158 @@
-Agis en tant qu'expert Développeur React / TypeScript. Tu dois mettre à jour le code complet du composant principal dans `src/App.tsx` du projet `digibat-vat` afin de respecter strictement le cahier des charges fonctionnel, ergonomique et fiscal belge (2025-2026).
+import React, { useState } from 'react';
 
----
+// --- LISTE COMPLÈTE DES 27 PAYS DE L'UE ---
+const EU_COUNTRIES = [
+  { code: 'BE', nameFR: 'Belgique (BE)', nameNL: 'België (BE)' },
+  { code: 'FR', nameFR: 'France (FR)', nameNL: 'Frankrijk (FR)' },
+  { code: 'NL', nameFR: 'Pays-Bas (NL)', nameNL: 'Nederland (NL)' },
+  { code: 'DE', nameFR: 'Allemagne (DE)', nameNL: 'Duitsland (DE)' },
+  { code: 'LU', nameFR: 'Luxembourg (LU)', nameNL: 'Luxemburg (LU)' },
+  { code: 'AT', nameFR: 'Autriche (AT)', nameNL: 'Oostenrijk (AT)' },
+  { code: 'BG', nameFR: 'Bulgarie (BG)', nameNL: 'Bulgarije (BG)' },
+  { code: 'CY', nameFR: 'Chypre (CY)', nameNL: 'Cyprus (CY)' },
+  { code: 'HR', nameFR: 'Croatie (HR)', nameNL: 'Kroatië (HR)' },
+  { code: 'DK', nameFR: 'Danemark (DK)', nameNL: 'Denemarken (DK)' },
+  { code: 'ES', nameFR: 'Espagne (ES)', nameNL: 'Spanje (ES)' },
+  { code: 'EE', nameFR: 'Estonie (EE)', nameNL: 'Estland (EE)' },
+  { code: 'FI', nameFR: 'Finlande (FI)', nameNL: 'Finland (FI)' },
+  { code: 'GR', nameFR: 'Grèce (GR)', nameNL: 'Griekenland (GR)' },
+  { code: 'HU', nameFR: 'Hongrie (HU)', nameNL: 'Hongarije (HU)' },
+  { code: 'IE', nameFR: 'Irlande (IE)', nameNL: 'Ierland (IE)' },
+  { code: 'IT', nameFR: 'Italie (IT)', nameNL: 'Italië (IT)' },
+  { code: 'LV', nameFR: 'Lettonie (LV)', nameNL: 'Letland (LV)' },
+  { code: 'LT', nameFR: 'Lituanie (LT)', nameNL: 'Litouwen (LT)' },
+  { code: 'MT', nameFR: 'Malte (MT)', nameNL: 'Malta (MT)' },
+  { code: 'PL', nameFR: 'Pologne (PL)', nameNL: 'Polen (PL)' },
+  { code: 'PT', nameFR: 'Portugal (PT)', nameNL: 'Portugal (PT)' },
+  { code: 'RO', nameFR: 'Roumanie (RO)', nameNL: 'Roemenië (RO)' },
+  { code: 'SK', nameFR: 'Slovaquie (SK)', nameNL: 'Slowakije (SK)' },
+  { code: 'SI', nameFR: 'Slovénie (SI)', nameNL: 'Slovenië (SI)' },
+  { code: 'SE', nameFR: 'Suède (SE)', nameNL: 'Zweden (SE)' },
+  { code: 'CZ', nameFR: 'Tchéquie (CZ)', nameNL: 'Tsjechië (CZ)' }
+];
 
-### 1. RÈGLES DE SAISIE & ÉTATS INITIAUX (CHAMPS VIERGES PAR DÉFAUT)
-Les états (`useState`) des champs suivants doivent être initialisés avec des valeurs neutres/vides (`""`) pour laisser une autonomie totale à l'entrepreneur :
-- **Client :** `nomRaisonSociale`, `numeroTVA`
-- **Chantier :** `adresseChantier`
-- **Prestataire :** `nomEntreprise`, `numeroTVAPrestataire`, `adressePrestataire`, `coordonneesPrestataire`
-- **Facturation :** `dateLivraisonChantier` (champ manuel sur la facture)
-- **Tableau de prestations :** Tableau dynamique initialisé avec des lignes vierges (désignations vides, montants HT vides).
+// --- DICTIONNAIRE DE TRADUCTION STRICT (FR / NL) ---
+const TRANSLATIONS = {
+  FR: {
+    title: "Détermination TVA « Travaux immobiliers » — Belgique 2025-2026",
+    subtitle: "Conforme réformes 2025-2026",
+    step1Title: "Étape 1 : Profil Client",
+    clientTypeB2B: "Assujetti à la TVA (B2B)",
+    clientTypeB2C: "Particulier / Non-assujetti (B2C)",
+    viesOk: "TVA VIES Validée (OK)",
+    nameLabel: "Nom / Raison sociale",
+    vatLabel: "Numéro de TVA",
+    countryLabel: "Pays du client",
+    nextStep: "Étape suivante"
+  },
+  NL: {
+    title: "Btw-bepaling « Werken in onroerende staat » — België 2025-2026",
+    subtitle: "Conform de hervormingen 2025-2026",
+    step1Title: "Stap 1: Klantprofiel",
+    clientTypeB2B: "Btw-plichtige (B2B)",
+    clientTypeB2C: "Particulier (B2C)",
+    viesOk: "VIES Validated (Oké)",
+    nameLabel: "Naam / Bedrijfsnaam",
+    vatLabel: "Btw-nummer",
+    countryLabel: "Land van de klant",
+    nextStep: "Volgende stap"
+  }
+};
 
----
+export default function App() {
+  const [lang, setLang] = useState<'FR' | 'NL'>('FR');
+  const t = TRANSLATIONS[lang];
 
-### 2. TRADUCTION STRICTE & MIROIR LINGUISTIQUE (FR ↔ NL)
-Intègre un dictionnaire de traduction réactif permettant de basculer instantanément toute l'interface entre le Français (FR) et le Néerlandais (NL) sans perte de données :
-- "Détermination TVA « Travaux immobiliers » — Belgique 2025-2026" ↔ "Btw-bepaling « Werken in onroerende staat » — België 2025-2026"
-- "Conforme réformes 2025-2026" ↔ "Conform de hervormingen 2025-2026"
-- "Assujetti à la TVA (B2B)" ↔ "Btw-plichtige (B2B)"
-- "Particulier / Non-assujetti (B2C)" ↔ "Particulier (B2C)"
-- "TVA VIES Validée (OK)" ↔ "VIES Validated (Oké)"
-- "Nom / Raison sociale" ↔ "Naam / Bedrijfsnaam"
-- "Numéro de TVA" ↔ "Btw-nummer"
-- "Adresse du chantier / bien" ↔ "Adres van de werf / bouwwerf"
-- "Prestataire de services / Entrepreneur" ↔ "Dienstverlener / Aannemer"
-- "Prestations & Matériels" ↔ "Prestaties & Materialen"
-- "Montant" ↔ "Bedrag" | "TVA" ↔ "Btw" | "Total" ↔ "Totaal"
-- "Date de livraison des travaux" ↔ "Opleveringsdatum van de werken"
-- "Transférer via Peppol" ↔ "Verzenden via Peppol"
-- "Convertir en facture" ↔ "Omzetten naar factuur"
+  // États vierges par défaut
+  const [clientType, setClientType] = useState<'B2B' | 'B2C'>('B2C');
+  const [clientName, setClientName] = useState('');
+  const [clientVat, setClientVat] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('BE');
 
-La constante `EU_COUNTRIES` doit afficher dynamiquement les noms de tous les pays de l'UE selon la langue active (`nameFR` / `nameNL`).
+  return (
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
+      {/* Sélecteur de Langue */}
+      <div style={{ textAlign: 'right', marginBottom: '10px' }}>
+        <button 
+          onClick={() => setLang('FR')} 
+          style={{ fontWeight: lang === 'FR' ? 'bold' : 'normal', marginRight: '5px', padding: '5px 10px' }}>
+          FR
+        </button>
+        <button 
+          onClick={() => setLang('NL')} 
+          style={{ fontWeight: lang === 'NL' ? 'bold' : 'normal', padding: '5px 10px' }}>
+          NL
+        </button>
+      </div>
 
----
+      {/* En-tête */}
+      <h1 style={{ fontSize: '20px', color: '#1e3a8a' }}>{t.title}</h1>
+      <p style={{ color: '#64748b', fontSize: '14px' }}>{t.subtitle}</p>
 
-### 3. ÉTAPE 1 — PROFIL CLIENT & VALIDATION VIES
-- **B2B :** La validation du numéro de TVA via l'API VIES est **bloquante**. L'utilisateur ne peut passer à l'Étape 2 que si le numéro est validé (`VIES Validated (Oké)`). Afficher les messages d'erreur/succès dans la langue sélectionnée.
-- **B2C :** Pas de validation VIES. Accès direct à l'Étape 2.
+      <hr style={{ margin: '20px 0' }} />
 
----
+      {/* Étape 1 : Profil Client */}
+      <h2>{t.step1Title}</h2>
+      
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ marginRight: '15px' }}>
+          <input 
+            type="radio" 
+            name="clientType" 
+            checked={clientType === 'B2C'} 
+            onChange={() => setClientType('B2C')} 
+          /> {t.clientTypeB2C}
+        </label>
+        <label>
+          <input 
+            type="radio" 
+            name="clientType" 
+            checked={clientType === 'B2B'} 
+            onChange={() => setClientType('B2B')} 
+          /> {t.clientTypeB2B}
+        </label>
+      </div>
 
-### 4. ÉTAPE 2 — BIEN IMMOBILIER & NATURE DES TRAVAUX
-- **Âge du bâtiment :** 2 options (`≥ 10 ans` / `≥ 10 jaar` OU `< 10 ans` / `< 10 jaar`).
-- **Usage :** 4 options (`100% Privé`, `> 50% Privé`, `Exclusif Pro`, `Mixte (Privé + Pro)`).
-  - *Si Mixte :* Activer le contrôle du critère de surface minimale de 200 m².
-- **Nature des travaux :** 5 options (`Rénovation standard`, `Pompe à chaleur`, `Entretien courant / Jardinage`, `Panneaux solaires & Isolation`, `Démolition et/ou Construction`).
-- Mise en page : Textes centrés en petite écriture, champ « Adresse du chantier » vierge par défaut.
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px' }}>{t.nameLabel}</label>
+          <input 
+            type="text" 
+            value={clientName} 
+            onChange={(e) => setClientName(e.target.value)} 
+            placeholder=""
+            style={{ width: '100%', padding: '8px' }}
+          />
+        </div>
 
----
+        {clientType === 'B2B' && (
+          <div>
+            <label style={{ display: 'block', fontSize: '12px' }}>{t.vatLabel}</label>
+            <input 
+              type="text" 
+              value={clientVat} 
+              onChange={(e) => setClientVat(e.target.value)} 
+              placeholder="BE 0123.456.789"
+              style={{ width: '100%', padding: '8px' }}
+            />
+          </div>
+        )}
 
-### 5. ÉTAPE 3 — MOTEUR FISCAL TVA (DROIT BELGE 2025-2026 & AR 29/03/2022)
-Détermine le taux de TVA principal et la mention légale associée :
-1. **Client B2B (Assujetti) :**
-   - Taux : **0%** (Autoliquidation / Cocontractant / Medecontractant).
-   - Mention légale : *"Autoliquidation : Btw te voldoen door de medecontractant (Art. 20, KB nr. 1)"*.
-2. **Client B2C — Bâtiment < 10 ans :**
-   - **Pompes à chaleur (AR 29/03/2022) :** Taux réduit de **6%**.
-   - **Autres travaux (Rénovation, Solaire, Jardinage) :** Taux normal de **21%**.
-3. **Client B2C — Bâtiment ≥ 10 ans :**
-   - **Entretien courant / Jardinage (tonte, taille, nettoyage, petits travaux, peinture < 2 ans) :** Taux de **21%** systématique.
-   - **Rénovation standard & Gros aménagement (terrasses, pavage, abattage d'arbres, pompes à chaleur, panneaux solaires) :** Taux réduit de **6%**.
-4. **Usage Mixte (Privé + Pro) & Principe de Hoofdzaak :**
-   - Pro > Privé : Ventilation obligatoire (21% partie pro / 6% partie privée).
-   - Pro ≤ Privé : Taux de 6% applicable avec mention du principe de *hoofdzaak* (domicile privé principal) dédouanant l'entrepreneur.
-5. **Attestation légale AR 29/03/2022 :** Générer automatiquement la clause de présomption d'un mois sur la facture pour les travaux sous taux réduit.
-
----
-
-### 6. ÉCRANS DEVIS & FACTURE
-- **Horodatage :** Générer automatiquement la date et l'heure courantes à la création du devis.
-- **Ajustement mixte ligne par ligne :** Dans le tableau dynamique des prestations, permettre d'ajuster le taux de TVA (6% ou 21%) pour chaque ligne individuellement.
-- **Ventilation des sous-totaux en bas de page :**
-  - Total HT (6%) + TVA 6%
-  - Total HT (21%) + TVA 21%
-  - Total Général TTC
-- **Facture :**
-  - Reprendre toutes les données du devis (numéro, date, prestations, montants, coordonnées).
-  - Inclure la cellule vierge `Date de livraison des travaux` (saisie manuelle).
-  - Boutons d'action bien visibles : `[Enregistrer la facture]`, `[Imprimer]`, `[Transférer via Peppol]`.
-- **Règle d'impression & Peppol :**
-  - Ajouter les règles CSS `@media print` et la structure XML/JSON Peppol pour **masquer strictement l'historique des modifications** lors de l'impression ou de l'envoi Peppol.
-
-Fournis le code TypeScript/React complet, propre et directement compilable pour `src/App.tsx`.
+        <div>
+          <label style={{ display: 'block', fontSize: '12px' }}>{t.countryLabel}</label>
+          <select 
+            value={selectedCountry} 
+            onChange={(e) => setSelectedCountry(e.target.value)}
+            style={{ width: '100%', padding: '8px' }}
+          >
+            {EU_COUNTRIES.map((country) => (
+              <option key={country.code} value={country.code}>
+                {lang === 'FR' ? country.nameFR : country.nameNL}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
