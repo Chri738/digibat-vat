@@ -89,6 +89,14 @@ const TRANSLATIONS = {
     // Étape 3
     step3Title: "Étape 3 : Régime TVA & Attestation Légale",
     summaryTitle: "Récapitulatif du dossier",
+    summaryClient: "Client",
+    summaryCountry: "Pays client",
+    summaryBuildingAge: "Âge du bâtiment",
+    summaryUsage: "Usage du bâtiment",
+    summaryWorkType: "Nature des travaux",
+    summaryOutdoor: "Travaux extérieurs",
+    summarySiteAddress: "Adresse du chantier",
+
     regimeTitle: "Régime TVA Applicable",
     legalClauseTitle: "Mention légale obligatoire à inscrire sur la facture",
     restartBtn: "Nouvelle simulation",
@@ -157,6 +165,14 @@ const TRANSLATIONS = {
     // Étape 3
     step3Title: "Stap 3: Btw-regeling & Wettelijke Vermelding",
     summaryTitle: "Samenvatting van het dossier",
+    summaryClient: "Klant",
+    summaryCountry: "Land klant",
+    summaryBuildingAge: "Ouderdom gebouw",
+    summaryUsage: "Gebruik gebouw",
+    summaryWorkType: "Aard van de werken",
+    summaryOutdoor: "Buitenwerken",
+    summarySiteAddress: "Adres van de werf",
+
     regimeTitle: "Toepasselijke Btw-regeling",
     legalClauseTitle: "Verplichte wettelijke vermelding op de factuur",
     restartBtn: "Nieuwe simulatie",
@@ -274,7 +290,7 @@ export default function App() {
             color: "#16a34a",
             clause: lang === 'FR'
               ? `« TVA à 6% - Bâtiment à usage mixte (> 50% privé : ${pctPrive}% privé / ${pctPro}% pro) de plus de 10 ans. En l'absence de contestation par écrit dans un délai d'un mois, le client est présumé reconnaître que l'immeuble est affecté principalement à un logement privé. »`
-              : `« Btw 6% - Gemengd gebouw (> 50% privé: ${pctPrive}% privé / ${pctPro}% pro) ouder dan 10 jaar. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand, wordt de klant verondersteld te erkennen dat het gebouw hoofdzakelijk als privéwoning wordt gebruikt. »`
+              : `« Btw 6% - Gemengd gebouw (> 50% privé: ${pctPrive}% privé / ${pctPro}% pro) ouder dan 10 jaar. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand, wordt de klant verondersteld te erkennen dat het gebouw hoofdjelijk als privéwoning wordt gebruikt. »`
           };
         } else {
           return {
@@ -660,17 +676,17 @@ export default function App() {
             </div>
           </div>
 
-          {/* RÉCAPITULATIF DU DOSSIER */}
+          {/* RÉCAPITULATIF DU DOSSIER TRADUIT */}
           <div style={{ border: '1px solid #e2e8f0', padding: '15px', borderRadius: '6px', background: '#ffffff', marginBottom: '20px' }}>
             <h4 style={{ margin: '0 0 10px 0', color: '#1e3a8a', fontSize: '14px' }}>{t.summaryTitle}</h4>
             <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#475569' }}>
-              <li><strong>Client :</strong> {clientName || 'N/A'} ({clientType === 'B2B' ? `B2B - TVA : ${clientVat}` : 'B2C Particular'})</li>
-              <li><strong>Pays Client :</strong> {selectedCountry}</li>
-              <li><strong>Âge du bâtiment :</strong> {buildingAge === 'over10' ? '≥ 10 ans' : '< 10 ans'}</li>
-              <li><strong>Usage :</strong> {buildingUsage} {buildingUsage === 'mixte' && `(${totalSurface} m² total)`}</li>
-              <li><strong>Nature des travaux :</strong> {workType}</li>
-              {outdoorOption !== 'none' && <li><strong>Option Extérieur :</strong> {outdoorOption}</li>}
-              {siteAddress && <li><strong>Adresse Chantier :</strong> {siteAddress}</li>}
+              <li><strong>{t.summaryClient} :</strong> {clientName || 'N/A'} ({clientType === 'B2B' ? `B2B - TVA : ${clientVat}` : 'B2C Particular'})</li>
+              <li><strong>{t.summaryCountry} :</strong> {selectedCountry}</li>
+              <li><strong>{t.summaryBuildingAge} :</strong> {buildingAge === 'over10' ? '≥ 10 ans' : '< 10 ans'}</li>
+              <li><strong>{t.summaryUsage} :</strong> {buildingUsage} {buildingUsage === 'mixte' && `(${totalSurface} m² total)`}</li>
+              <li><strong>{t.summaryWorkType} :</strong> {workType}</li>
+              {outdoorOption !== 'none' && <li><strong>{t.summaryOutdoor} :</strong> {outdoorOption}</li>}
+              {siteAddress && <li><strong>{t.summarySiteAddress} :</strong> {siteAddress}</li>}
             </ul>
           </div>
 
