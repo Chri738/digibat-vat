@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import DevisFactureScreen from './components/DevisFactureScreen';
+import { DevisFactureScreen } from './components/DevisFactureScreen';
 import { DocumentEditor, VerdictData } from './components/DocumentEditor';
 
 export function App() {
   const [currentMode, setCurrentMode] = useState<'calculator' | 'editor'>('calculator');
   const [docType, setDocType] = useState<'DEVIS' | 'FACTURE'>('FACTURE');
-  const [docNumber, setDocNumber] = useState<string>('2026-001');
+  const [docNumber] = useState<string>('2026-001');
   const [verdictData, setVerdictData] = useState<VerdictData>({
     clientName: 'Client Exemple SRL',
     clientVat: 'BE0123456789',
     clientCountry: 'BE',
     regimeTitle: 'TVA Cocontractant (Régime A.R. n°1)',
     vatRate: 0,
-    legalMention: 'Autoliquidation - Article 20 de l\'arrêté royal n° 1 / Btw verlegd - Artikel 20 van het Koninklijk Besluit nr. 1.'
+    legalMention: "Autoliquidation - Article 20 de l'arrêté royal n° 1 / Btw verlegd - Artikel 20 van het Koninklijk Besluit nr. 1."
   });
 
   const handleOpenEditor = (type: 'DEVIS' | 'FACTURE', data?: Partial<VerdictData>) => {
