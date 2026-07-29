@@ -36,7 +36,7 @@ const TRANSLATIONS = {
   FR: {
     title: "Détermination TVA « Travaux immobiliers » — Belgique 2025-2026",
     subtitle: "Conforme réformes 2025-2026",
-    step1Title: "Étape 1 : Profil Client (Klantprofiel)",
+    step1Title: "Étape 1 : Profil Client",
     clientTypeB2B: "Assujetti à la TVA (B2B)",
     clientTypeB2C: "Particulier / Non-assujetti (B2C)",
     viesBtn: "Vérifier le numéro TVA (VIES)",
@@ -48,7 +48,7 @@ const TRANSLATIONS = {
     countryLabel: "Pays du client",
     nextStep: "Passer à l'Étape 2",
 
-    step2Title: "Étape 2 : Bien immobilier & Nature des travaux (Onroerend goed & Aard van de werken)",
+    step2Title: "Étape 2 : Bien immobilier & Nature des travaux",
     ageLabel: "Âge du bâtiment",
     ageOver10: "≥ 10 ans",
     ageUnder10: "< 10 ans",
@@ -58,7 +58,8 @@ const TRANSLATIONS = {
     usagePro: "Exclusif Pro",
     usageMixte: "Mixte (Privé + Pro)",
     
-    // Saisie Surfaces Mixte (Minimum 200 m²)
+    // Surfaces
+    surfaceBoxTitle: "Répartition des superficies (Usage Mixte — Minimum 200 m²)",
     surfacePriveLabel: "Superficie Privée (m²)",
     surfaceProLabel: "Superficie Professionnelle (m²)",
     totalSurfaceLabel: "Superficie Totale du bâtiment",
@@ -72,7 +73,7 @@ const TRANSLATIONS = {
     workSolar: "Panneaux solaires & Isolation",
     workDemolition: "Démolition et/ou Construction",
 
-    // Travaux extérieurs / Espaces verts
+    // Travaux extérieurs
     outdoorTitle: "🌿 TRAVAUX EXTÉRIEURS / ESPACES VERTS (OPTIONNEL)",
     outdoorSubtitle: "Cochez uniquement si la prestation porte sur l'entretien ou l'aménagement d'espaces verts.",
     outdoorNoneTitle: "Ne s'applique pas",
@@ -83,7 +84,22 @@ const TRANSLATIONS = {
 
     siteAddressLabel: "Adresse du chantier / bien",
     previousStep: "Retour Étape 1",
-    toStep3: "Calculer le régime TVA (Étape 3)"
+    toStep3: "Calculer le régime TVA (Étape 3)",
+
+    // Étape 3
+    step3Title: "Étape 3 : Régime TVA & Attestation Légale",
+    summaryTitle: "Récapitulatif du dossier",
+    regimeTitle: "Régime TVA Applicable",
+    legalClauseTitle: "Mention légale obligatoire à inscrire sur la facture",
+    restartBtn: "Nouvelle simulation",
+    copyBtn: "Copier la mention légale",
+    copiedMsg: "Mention copiée dans le presse-papier !",
+    
+    // Libellés Régime
+    reverseCharge: "Autoliquidation (Co-contractant)",
+    rate6: "Taux réduit 6%",
+    rate21: "Taux normal 21%",
+    rateProrata: "Régime Mixte (Prorata 6% / 21%)"
   },
   NL: {
     title: "Btw-bepaling « Werken in onroerende staat » — België 2025-2026",
@@ -110,7 +126,8 @@ const TRANSLATIONS = {
     usagePro: "Exclusief Beroepsmatig",
     usageMixte: "Gemengd (Privé + Pro)",
     
-    // Saisie Surfaces Mixte (NL)
+    // Surfaces
+    surfaceBoxTitle: "Verdeling van de oppervlakten (Gemengd gebruik — Minimum 200 m²)",
     surfacePriveLabel: "Privé-oppervlakte (m²)",
     surfaceProLabel: "Beroepsmatige oppervlakte (m²)",
     totalSurfaceLabel: "Totale oppervlakte van het gebouw",
@@ -124,7 +141,7 @@ const TRANSLATIONS = {
     workSolar: "Zonnepanelen & Isolatie",
     workDemolition: "Sloop en/of Bouw",
 
-    // Travaux extérieurs / Espaces verts (NL)
+    // Travaux extérieurs
     outdoorTitle: "🌿 BUITENWERKEN / GROENVOORZIENINGEN (OPTIONEEL)",
     outdoorSubtitle: "Vink alleen aan als de dienst betrekking heeft op het onderhoud of de aanleg van groene ruimten.",
     outdoorNoneTitle: "Niet van toepassing",
@@ -135,7 +152,22 @@ const TRANSLATIONS = {
 
     siteAddressLabel: "Adres van de werf / bouwwerf",
     previousStep: "Terug naar Stap 1",
-    toStep3: "Btw-regeling berekenen (Stap 3)"
+    toStep3: "Btw-regeling berekenen (Stap 3)",
+
+    // Étape 3
+    step3Title: "Stap 3: Btw-regeling & Wettelijke Vermelding",
+    summaryTitle: "Samenvatting van het dossier",
+    regimeTitle: "Toepasselijke Btw-regeling",
+    legalClauseTitle: "Verplichte wettelijke vermelding op de factuur",
+    restartBtn: "Nieuwe simulatie",
+    copyBtn: "Kopieer vermelding",
+    copiedMsg: "Vermelding gecopieerd naar klembord!",
+
+    // Libellés Régime
+    reverseCharge: "Btw verlegd (Medecontractant)",
+    rate6: "Verlaagd tarief 6%",
+    rate21: "Normaal tarief 21%",
+    rateProrata: "Gemengde regeling (Prorata 6% / 21%)"
   }
 };
 
@@ -143,8 +175,8 @@ export default function App() {
   const [lang, setLang] = useState<'FR' | 'NL'>('FR');
   const t = TRANSLATIONS[lang];
 
-  // Nav Étape (1 ou 2)
-  const [step, setStep] = useState<1 | 2>(1);
+  // Navigation Étape (1, 2 ou 3)
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // --- ÉTAPE 1 : ÉTATS ---
   const [clientType, setClientType] = useState<'B2B' | 'B2C'>('B2C');
@@ -156,17 +188,12 @@ export default function App() {
   // --- ÉTAPE 2 : ÉTATS ---
   const [buildingAge, setBuildingAge] = useState<'over10' | 'under10'>('over10');
   const [buildingUsage, setBuildingUsage] = useState<'prive100' | 'prive50' | 'pro' | 'mixte'>('prive100');
-  
-  // Surfaces pour l'usage mixte (saisie libre par l'entrepreneur)
   const [surfacePrive, setSurfacePrive] = useState<number | ''>('');
   const [surfacePro, setSurfacePro] = useState<number | ''>('');
-
   const [workType, setWorkType] = useState<'renov' | 'heatpump' | 'garden' | 'solar' | 'demolition'>('renov');
-  
-  // Travaux Extérieurs / Espaces verts (Optionnel)
   const [outdoorOption, setOutdoorOption] = useState<'none' | 'garden' | 'landscaping'>('none');
-
   const [siteAddress, setSiteAddress] = useState('');
+  const [copied, setCopied] = useState(false);
 
   // Simulation VIES
   const handleViesCheck = () => {
@@ -184,6 +211,109 @@ export default function App() {
   const numPro = Number(surfacePro) || 0;
   const totalSurface = numPrive + numPro;
   const isTotalOver200 = totalSurface >= 200;
+
+  // --- MOTEUR FISCAL (ÉTAPE 3) ---
+  const calculateVatResult = () => {
+    // 1. REGLE B2B : Autoliquidation / Co-contractant
+    if (clientType === 'B2B') {
+      return {
+        regime: t.reverseCharge,
+        rateText: "0% (Autoliquidation / Co-contractant)",
+        color: "#2563eb",
+        clause: lang === 'FR' 
+          ? `« Autoliquidation : En l'absence de contestation par écrit, dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître qu'il est un assujetti tenu au dépôt de déclarations périodiques et que les travaux immobiliers sont affectés à son activité professionnelle (Art. 20 KB n° 1). »`
+          : `« Btw verlegd: Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na de ontvangst van de factuur, wordt de afnemer vermoed te erkennen dat hij een btw-plichtige is die gehouden is tot het indienen van periodieke aangiften en dat de werken in onroerende staat bestemd zijn voor zijn beroepswerkzaamheid (Art. 20 KB nr. 1). »`
+      };
+    }
+
+    // 2. REGLE ESPACES VERTS (Entretien courant = toujours 21%)
+    if (outdoorOption === 'garden' || workType === 'garden') {
+      return {
+        regime: t.rate21,
+        rateText: "21%",
+        color: "#dc2626",
+        clause: lang === 'FR'
+          ? `« Travaux d'entretien courant de jardins et espaces verts soumis au taux normal de TVA de 21% (Rubrique non éligible au taux réduit de 6%). »`
+          : `« Lopend onderhoud van tuinen en groenvoorzieningen onderworpen aan het normale btw-tarief van 21%. »`
+      };
+    }
+
+    // 3. B2C : Bâtiment < 10 ans
+    if (buildingAge === 'under10') {
+      return {
+        regime: t.rate21,
+        rateText: "21%",
+        color: "#dc2626",
+        clause: lang === 'FR'
+          ? `« Prestations soumises au taux normal de TVA de 21% (Bâtiment de moins de 10 ans). »`
+          : `« Diensten onderworpen aan het normale btw-tarief van 21% (Gebouw jonger dan 10 jaar). »`
+      };
+    }
+
+    // 4. B2C : Bâtiment >= 10 ans
+    if (buildingAge === 'over10') {
+      if (buildingUsage === 'pro') {
+        return {
+          regime: t.rate21,
+          rateText: "21%",
+          color: "#dc2626",
+          clause: lang === 'FR'
+            ? `« Prestations affectées exclusivement à un usage professionnel : Taux normal de 21% applicable. »`
+            : `« Diensten uitsluitend bestemd voor beroepsmatig gebruik: Normaal tarief van 21% van toepassing. »`
+        };
+      }
+
+      if (buildingUsage === 'mixte') {
+        const pctPrive = totalSurface > 0 ? Math.round((numPrive / totalSurface) * 100) : 0;
+        const pctPro = totalSurface > 0 ? Math.round((numPro / totalSurface) * 100) : 0;
+
+        if (pctPrive >= 50) {
+          return {
+            regime: t.rate6,
+            rateText: "6%",
+            color: "#16a34a",
+            clause: lang === 'FR'
+              ? `« TVA à 6% - Bâtiment à usage mixte (> 50% privé : ${pctPrive}% privé / ${pctPro}% pro) de plus de 10 ans. En l'absence de contestation par écrit dans un délai d'un mois, le client est présumé reconnaître que l'immeuble est affecté principalement à un logement privé. »`
+              : `« Btw 6% - Gemengd gebouw (> 50% privé: ${pctPrive}% privé / ${pctPro}% pro) ouder dan 10 jaar. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand, wordt de klant verondersteld te erkennen dat het gebouw hoofdzakelijk als privéwoning wordt gebruikt. »`
+          };
+        } else {
+          return {
+            regime: t.rateProrata,
+            rateText: `Prorata (${pctPrive}% à 6% / ${pctPro}% à 21%)`,
+            color: "#d97706",
+            clause: lang === 'FR'
+              ? `« Ventilation TVA pour bâtiment mixte de plus de 10 ans : ${pctPrive}% de la prestation soumis à 6% (partie privée) et ${pctPro}% soumis à 21% (partie professionnelle). »`
+              : `« Btw-splitsing voor gemengd gebouw ouder dan 10 jaar: ${pctPrive}% onderworpen aan 6% (privégedeelte) en ${pctPro}% onderworpen aan 21% (beroepsgedeelte). »`
+          };
+        }
+      }
+
+      // Usage 100% privé ou > 50% privé
+      return {
+        regime: t.rate6,
+        rateText: "6%",
+        color: "#16a34a",
+        clause: lang === 'FR'
+          ? `« Taux de TVA réduit de 6% applicable (Rubrique XXXVIII du tableau A de l'arrêté royal n° 20) : Rénovation d'un logement privé de plus de 10 ans. En l'absence de contestation par écrit dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître que les travaux sont effectués à un immeuble dont l'occupation effective comme logement privé remonte à plus de 10 ans. »`
+          : `« Verlaagd btw-tarief van 6% van toepassing (Rubriek XXXVIII van tabel A van het koninklijk besluit nr. 20): Renovatie van een privéwoning ouder dan 10 jaar. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand, wordt de klant vermoed te erkennen dat de werken worden uitgevoerd aan een woning waarvan de ingebruikneming meer dan 10 jaar teruggaat. »`
+      };
+    }
+
+    return {
+      regime: t.rate21,
+      rateText: "21%",
+      color: "#dc2626",
+      clause: "Taux par défaut 21%."
+    };
+  };
+
+  const vatResult = calculateVatResult();
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(vatResult.clause);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '850px', margin: '0 auto' }}>
@@ -351,11 +481,11 @@ export default function App() {
               </select>
             </div>
 
-            {/* SAISIE DES SUPERFICIES SI USAGE MIXTE (MINIMUM 200 m²) */}
+            {/* SAISIE DES SUPERFICIES SI USAGE MIXTE */}
             {buildingUsage === 'mixte' && (
               <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '6px', maxWidth: '550px' }}>
                 <h4 style={{ margin: '0 0 10px 0', color: '#1e3a8a', fontSize: '14px' }}>
-                  Répartition des superficies (Usage Mixte — Minimum 200 m²)
+                  {t.surfaceBoxTitle}
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div>
@@ -380,7 +510,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Validation du Seuil de 200 m² sur la Superficie Totale */}
                 <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '13px' }}>
                   <p style={{ margin: '0 0 5px 0' }}>
                     <strong>{t.totalSurfaceLabel} :</strong> {totalSurface} m² 
@@ -412,7 +541,7 @@ export default function App() {
               </select>
             </div>
 
-            {/* SECTIONS TRAVAUX EXTÉRIEURS / ESPACES VERTS (OPTIONNEL) */}
+            {/* TRAVAUX EXTÉRIEURS */}
             <div style={{ marginTop: '10px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#15803d', marginBottom: '2px' }}>
                 {t.outdoorTitle}
@@ -422,8 +551,6 @@ export default function App() {
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                
-                {/* Option 1 : Ne s'applique pas */}
                 <div 
                   onClick={() => setOutdoorOption('none')}
                   style={{
@@ -438,7 +565,6 @@ export default function App() {
                   <strong style={{ fontSize: '13px', color: '#1e293b' }}>{t.outdoorNoneTitle}</strong>
                 </div>
 
-                {/* Option 2 : Entretien courant */}
                 <div 
                   onClick={() => setOutdoorOption('garden')}
                   style={{
@@ -454,7 +580,6 @@ export default function App() {
                   <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{t.outdoorGardenSub}</div>
                 </div>
 
-                {/* Option 3 : Aménagement & Gros travaux */}
                 <div 
                   onClick={() => setOutdoorOption('landscaping')}
                   style={{
@@ -469,7 +594,6 @@ export default function App() {
                   <strong style={{ fontSize: '13px', color: '#1e293b' }}>{t.outdoorLandscapingTitle}</strong>
                   <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{t.outdoorLandscapingSub}</div>
                 </div>
-
               </div>
             </div>
 
@@ -495,12 +619,73 @@ export default function App() {
                 {t.previousStep}
               </button>
               <button 
-                onClick={() => alert("Étape 3 : Prêt pour le moteur fiscal !")}
+                onClick={() => setStep(3)}
                 style={{ flex: 1, padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
                 {t.toStep3}
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ================= ÉTAPE 3 ================= */}
+      {step === 3 && (
+        <div>
+          <h2>{t.step3Title}</h2>
+
+          {/* RÉSULTAT TVA */}
+          <div style={{ background: '#f8fafc', border: `2px solid ${vatResult.color}`, padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: '#64748b' }}>
+              {t.regimeTitle}
+            </span>
+            <h3 style={{ margin: '5px 0 10px 0', fontSize: '22px', color: vatResult.color }}>
+              {vatResult.regime} ({vatResult.rateText})
+            </h3>
+
+            {/* CLAUSE OBLIGATOIRE SUR FACTURE */}
+            <div style={{ marginTop: '15px', background: '#fff', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '6px' }}>
+              <strong style={{ fontSize: '13px', color: '#1e293b', display: 'block', marginBottom: '8px' }}>
+                📋 {t.legalClauseTitle} :
+              </strong>
+              <blockquote style={{ margin: 0, fontStyle: 'italic', fontSize: '13px', color: '#334155', background: '#f1f5f9', padding: '10px', borderRadius: '4px' }}>
+                {vatResult.clause}
+              </blockquote>
+              
+              <button 
+                onClick={handleCopy}
+                style={{ marginTop: '10px', padding: '6px 12px', fontSize: '12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                {copied ? `✓ ${t.copiedMsg}` : t.copyBtn}
+              </button>
+            </div>
+          </div>
+
+          {/* RÉCAPITULATIF DU DOSSIER */}
+          <div style={{ border: '1px solid #e2e8f0', padding: '15px', borderRadius: '6px', background: '#ffffff', marginBottom: '20px' }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#1e3a8a', fontSize: '14px' }}>{t.summaryTitle}</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#475569' }}>
+              <li><strong>Client :</strong> {clientName || 'N/A'} ({clientType === 'B2B' ? `B2B - TVA : ${clientVat}` : 'B2C Particular'})</li>
+              <li><strong>Pays Client :</strong> {selectedCountry}</li>
+              <li><strong>Âge du bâtiment :</strong> {buildingAge === 'over10' ? '≥ 10 ans' : '< 10 ans'}</li>
+              <li><strong>Usage :</strong> {buildingUsage} {buildingUsage === 'mixte' && `(${totalSurface} m² total)`}</li>
+              <li><strong>Nature des travaux :</strong> {workType}</li>
+              {outdoorOption !== 'none' && <li><strong>Option Extérieur :</strong> {outdoorOption}</li>}
+              {siteAddress && <li><strong>Adresse Chantier :</strong> {siteAddress}</li>}
+            </ul>
+          </div>
+
+          {/* BOUTONS D'ACTION */}
+          <div style={{ display: 'flex', gap: '10px', maxWidth: '500px' }}>
+            <button 
+              onClick={() => setStep(2)}
+              style={{ flex: 1, padding: '10px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              {t.previousStep}
+            </button>
+            <button 
+              onClick={() => setStep(1)}
+              style={{ flex: 1, padding: '10px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
+              🔄 {t.restartBtn}
+            </button>
           </div>
         </div>
       )}
