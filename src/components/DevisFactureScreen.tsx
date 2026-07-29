@@ -16,9 +16,9 @@ export interface HistoryLog {
 }
 
 export interface DevisFactureProps {
-  lang: Language;
+  lang?: Language;
   defaultVatRate?: 0 | 6 | 21;
-  legalMention: string;
+  legalMention?: string;
   initialClientName?: string;
   initialClientVat?: string;
   initialSiteAddress?: string;
@@ -105,18 +105,19 @@ const TRANSLATIONS = {
 };
 
 export const DevisFactureScreen: React.FC<DevisFactureProps> = ({
-  lang,
+  lang = 'FR',
   defaultVatRate = 6,
-  legalMention,
+  legalMention = "TVA acquittée par le cocontractant - Article 20 de l'AR n°1",
   initialClientName = '',
   initialClientVat = '',
   initialSiteAddress = '',
   onBackToStep3
 }) => {
-  const t = TRANSLATIONS[lang];
+  const currentLang = (lang === 'NL' ? 'NL' : 'FR') as Language;
+  const t = TRANSLATIONS[currentLang];
 
   const [docMode, setDocMode] = useState<'quote' | 'invoice'>('quote');
-  const [createdAt] = useState<string>(() => new Date().toLocaleString(lang === 'FR' ? 'fr-BE' : 'nl-BE'));
+  const [createdAt] = useState<string>(() => new Date().toLocaleString(currentLang === 'FR' ? 'fr-BE' : 'nl-BE'));
   const [quoteRefNumber] = useState<string>(() => `DEV-${Date.now().toString().slice(-6)}`);
   const [invoiceRefNumber, setInvoiceRefNumber] = useState<string>('');
 
@@ -133,9 +134,9 @@ export const DevisFactureScreen: React.FC<DevisFactureProps> = ({
   const [history, setHistory] = useState<HistoryLog[]>([]);
 
   const addHistoryLog = useCallback((actionFR: string, actionNL: string) => {
-    const timestamp = new Date().toLocaleString(lang === 'FR' ? 'fr-BE' : 'nl-BE');
+    const timestamp = new Date().toLocaleString(currentLang === 'FR' ? 'fr-BE' : 'nl-BE');
     setHistory(prev => [...prev, { timestamp, actionFR, actionNL }]);
-  }, [lang]);
+  }, [currentLang]);
 
   useEffect(() => {
     addHistoryLog(`Création du devis ${quoteRefNumber}`, `Aanmaak van offerte ${quoteRefNumber}`);
@@ -153,7 +154,10 @@ export const DevisFactureScreen: React.FC<DevisFactureProps> = ({
   };
 
   const handleUpdateLine = (id: string, field: keyof PrestationLine, value: string | number) => {
-    setLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+    setLines(prev => prev.map(l => {
+      if (l.id !== id) return l;
+      return { ...l, [field]: value } as PrestationLine;
+    }));
   };
 
   const ht6 = lines.filter(l => l.vatRate === 6).reduce((acc, l) => acc + (Number(l.amount) || 0), 0);
@@ -182,7 +186,7 @@ export const DevisFactureScreen: React.FC<DevisFactureProps> = ({
 
   const handleSendPeppol = () => {
     if (!deliveryDate) {
-      alert(lang === 'FR' ? "Veuillez saisir la date de livraison des travaux." : "Vul de opleveringsdatum van de werken in.");
+      alert(currentLang === 'FR' ? "Veuillez saisir la date de livraison des travaux." : "Vul de opleveringsdatum van de werken in.");
       return;
     }
     addHistoryLog(
@@ -430,7 +434,7 @@ export const DevisFactureScreen: React.FC<DevisFactureProps> = ({
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '11px', color: '#64748b' }}>
           {history.map((h, i) => (
             <li key={i}>
-              <strong>[{h.timestamp}]</strong> — {lang === 'FR' ? h.actionFR : h.actionNL}
+              <strong>[{h.timestamp}]</strong> — {currentLang === 'FR' ? h.actionFR : h.actionNL}
             </li>
           ))}
         </ul>
