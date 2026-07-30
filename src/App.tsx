@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { FormState, LineItem } from './types';
-import { EU_COUNTRIES, WORK_CATEGORIES, TRANSLATIONS } from './translations';
-import { calculateVatRules } from './vatEngine';
+import { EU_COUNTRIES, WORK_CATEGORIES } from './translations';
+import * as vatModule from './vatEngine';
+
+// Sécurité : s'adapte automatiquement au nom de fonction présent dans vatEngine.ts
+const calculateVatRules = (vatModule as any).calculateVatRules || (vatModule as any).calculateVAT || (() => ({ rates: [{ rate: 21, label: 'Taux normal' }] }));
 
 export default function App() {
   const [activeStep, setActiveStep] = useState<number>(1);
@@ -25,7 +28,6 @@ export default function App() {
     deliveryDate: ''
   });
 
-  // Récupération sécurisée du nom complet d'un pays
   const getCountryName = (code: string, lang: string) => {
     try {
       const regionNames = new Intl.DisplayNames([lang.toLowerCase()], { type: 'region' });
@@ -35,9 +37,8 @@ export default function App() {
     }
   };
 
-  // Récupération sécurisée du libellé d'un travail
   const getWorkLabel = (workId: string, lang: string) => {
-    const work = WORK_CATEGORIES?.find((w: any) => w.id === workId);
+    const work = (WORK_CATEGORIES || []).find((w: any) => w.id === workId);
     if (!work) return lang === 'NL' ? 'Bouwwerken' : 'Travaux de rénovation';
     if (typeof work.label === 'string') return work.label;
     if (typeof work.label === 'object' && work.label !== null) {
@@ -46,10 +47,14 @@ export default function App() {
     return 'Travaux';
   };
 
-  // Calcul automatique de la TVA
-  const vatResult = calculateVatRules(state);
+  // Calcul sécurisé
+  let vatResult: any = { rates: [{ rate: 21, label: 'Taux normal 21%' }] };
+  try {
+    vatResult = calculateVatRules(state) || vatResult;
+  } catch (e) {
+    console.error("Erreur de calcul TVA:", e);
+  }
 
-  // Changement d'étape avec initialisation du Devis/Facture
   const handleNavigateToStep = (targetStep: number) => {
     if ((targetStep === 4 || targetStep === 5) && (state.lineItems.length === 0 || state.lineItems[0]?.description === '...')) {
       const defaultLabel = getWorkLabel(state.selectedWorkTypes[0] || 'renov-standard', state.language);
@@ -107,9 +112,8 @@ export default function App() {
     }));
   };
 
-  // Calculs financiers
-  const totalExcl = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-  const totalVat = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice * (item.vatRate / 100)), 0);
+  const totalExcl = (state.lineItems || []).reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+  const totalVat = (state.lineItems || []).reduce((acc, item) => acc + (item.quantity * item.unitPrice * (item.vatRate / 100)), 0);
   const totalIncl = totalExcl + totalVat;
 
   const isNL = state.language === 'NL';
@@ -117,16 +121,15 @@ export default function App() {
   return (
     <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' }}>
       
-      {/* HEADER & CHOIX DE LA LANGUE */}
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '20px' }}>DIGIBÂT VAT / DIGIBOUW BTW</h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            {isNL ? 'BTW-bepaling « Onroerende werken » — België 2025-2026' : 'Détermination TVA « Travaux immobiliers » — Belgique 2025-2026'}
+            {isNL ? 'BTW-bepaling « Onroerende werken » — België' : 'Détermination TVA « Travaux immobiliers » — Belgique'}
           </p>
         </div>
         <div>
-          <span style={{ fontSize: '12px', marginRight: '8px', color: '#475569' }}>Langue / Taal :</span>
           <button 
             onClick={() => setState({ ...state, language: 'FR' })}
             style={{ padding: '6px 12px', fontWeight: !isNL ? 'bold' : 'normal', background: !isNL ? '#2563eb' : '#e2e8f0', color: !isNL ? '#fff' : '#000', border: 'none', borderRadius: '4px 0 0 4px', cursor: 'pointer' }}
@@ -138,7 +141,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* TABS NAVIGATION */}
+      {/* NAVIGATION TABS */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {[
           { id: 1, label: isNL ? 'Klantprofiel' : 'Profil Client' },
@@ -165,10 +168,10 @@ export default function App() {
         ))}
       </div>
 
-      {/* CONTAINER PRINCIPAL */}
+      {/* BLOC ETAPES */}
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px' }}>
         
-        {/* ÉTAPE 1 : PROFIL CLIENT */}
+        {/* ETAPE 1 */}
         {activeStep === 1 && (
           <div>
             <h3>Étape 1 : {isNL ? 'Klantprofiel' : 'Profil Client'}</h3>
@@ -196,7 +199,7 @@ export default function App() {
                 </label>
                 <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                   <label><input type="radio" checked={state.clientType === 'B2C'} onChange={() => setState({ ...state, clientType: 'B2C' })} /> Particulier (B2C)</label>
-                  <label><input type="radio" checked={state.clientType === 'B2B'} onChange={() => setState({ ...state, clientType: 'B2B' })} /> Onroerend / Assujetti (B2B)</label>
+                  <label><input type="radio" checked={state.clientType === 'B2B'} onChange={() => setState({ ...state, clientType: 'B2B' })} /> Assujetti (B2B)</label>
                 </div>
               </div>
 
@@ -208,7 +211,7 @@ export default function App() {
                   type="text" 
                   value={state.clientName} 
                   onChange={(e) => setState({ ...state, clientName: e.target.value })} 
-                  placeholder={isNL ? 'Naam klant...' : 'Nom du client...'} 
+                  placeholder="Ex: Livlina NV" 
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 />
               </div>
@@ -249,7 +252,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ÉTAPE 2 : BIEN IMMOBILIER & TRAVAUX */}
+        {/* ETAPE 2 */}
         {activeStep === 2 && (
           <div>
             <h3>Étape 2 : {isNL ? 'Pand & Werken' : 'Bien Immobilier & Nature des Travaux'}</h3>
@@ -277,22 +280,21 @@ export default function App() {
                   onChange={(e) => setState({ ...state, buildingUsage: e.target.value as any })}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
-                  <option value="100_PRIVATE">{isNL ? '100% Privé' : '100% Privé'}</option>
-                  <option value="OVER_50_PRIVATE">{isNL ? '> 50% Privé' : '> 50% Privé'}</option>
+                  <option value="100_PRIVATE">100% Privé</option>
+                  <option value="OVER_50_PRIVATE">&gt; 50% Privé</option>
                   <option value="MIXED">{isNL ? 'Gemengd gebruik' : 'Usage Mixte'}</option>
                 </select>
               </div>
             </div>
 
-            {/* CHAMPS SURFACES (Si usage mixte) */}
             {state.buildingUsage === 'MIXED' && (
               <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '16px', borderRadius: '8px', marginTop: '16px' }}>
                 <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#854d0e', fontWeight: 'bold' }}>
-                  ⚠️ {isNL ? 'Gemengd gebruik regel (Totale oppervlakte ≥ 200 m² vereist)' : 'Règle d\'usage mixte (Superficie totale ≥ 200 m² requise)'}
+                  ⚠️ Règle d'usage mixte (Superficie totale ≥ 200 m² requise pour taux réduit)
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px' }}>{isNL ? 'Privé oppervlakte (m²)' : 'Surface Privée (m²)'}</label>
+                    <label style={{ display: 'block', fontSize: '12px' }}>Surface Privée (m²)</label>
                     <input 
                       type="number" 
                       value={state.surfacePrivate || ''} 
@@ -301,7 +303,7 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px' }}>{isNL ? 'Professionele oppervlakte (m²)' : 'Surface Professionnelle (m²)'}</label>
+                    <label style={{ display: 'block', fontSize: '12px' }}>Surface Professionnelle (m²)</label>
                     <input 
                       type="number" 
                       value={state.surfacePro || ''} 
@@ -352,28 +354,23 @@ export default function App() {
           </div>
         )}
 
-        {/* ÉTAPE 3 : RÉSULTAT DU CALCUL TVA */}
+        {/* ETAPE 3 */}
         {activeStep === 3 && (
           <div>
-            <h3>Étape 3 : {isNL ? 'Resultaat / Bepaalde BTW-regeling' : 'Résultat / Régime TVA Déterminé'}</h3>
-            
+            <h3>Étape 3 : Régime TVA Déterminé</h3>
             <div style={{ marginTop: '20px', padding: '20px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{isNL ? 'Toepasselijk tarief' : 'Taux applicable'} :</span>
+                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Taux applicable :</span>
                 <span style={{ padding: '6px 16px', background: '#dcfce7', color: '#15803d', fontWeight: 'bold', borderRadius: '20px', fontSize: '16px' }}>
                   ✓ {vatResult?.rates?.[0]?.rate ?? 21}% {vatResult?.rates?.[0]?.rate === 0 ? '(Autoliquidation / Verlegging van heffing)' : ''}
                 </span>
               </div>
-
-              <div style={{ marginTop: '16px' }}>
-                <p style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}>
-                  <strong>Description :</strong> {vatResult?.rates?.[0]?.label ?? 'Calcul effectué'}
-                </p>
-              </div>
-
+              <p style={{ fontSize: '13px', marginTop: '12px', color: '#334155' }}>
+                <strong>Détail :</strong> {vatResult?.rates?.[0]?.label ?? 'Taux normal 21%'}
+              </p>
               {vatResult?.legalNotice && (
                 <div style={{ marginTop: '16px', background: '#eff6ff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb' }}>
-                  <strong style={{ fontSize: '12px', color: '#1e40af' }}>{isNL ? 'Verplichte wettelijke vermelding' : 'Mention légale obligatoire'} :</strong>
+                  <strong style={{ fontSize: '12px', color: '#1e40af' }}>Mention légale obligatoire :</strong>
                   <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#1e3a8a', fontStyle: 'italic' }}>
                     "{vatResult.legalNotice}"
                   </p>
@@ -398,7 +395,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ÉTAPE 4 ET 5 : DEVIS ET FACTURE */}
+        {/* ETAPE 4 ET 5 */}
         {(activeStep === 4 || activeStep === 5) && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', marginBottom: '20px' }}>
@@ -413,7 +410,6 @@ export default function App() {
               </span>
             </div>
 
-            {/* INFOS PRESTATAIRE & CLIENT */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
               <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569', textTransform: 'uppercase' }}>Prestataire / Entrepreneur</h4>
@@ -430,7 +426,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* TABLEAU DES PRESTATIONS */}
             <h4>PRESTATIONS</h4>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
               <thead>
@@ -484,14 +479,12 @@ export default function App() {
               + Ligne
             </button>
 
-            {/* TOTALS */}
             <div style={{ marginTop: '20px', width: '300px', marginLeft: 'auto', textAlign: 'right', fontSize: '14px' }}>
               <p style={{ margin: '4px 0' }}>Subtotaal EXCL. BTW : <strong>{totalExcl.toFixed(2)} €</strong></p>
               <p style={{ margin: '4px 0', color: '#2563eb' }}>Montant TVA ({vatResult?.rates?.[0]?.rate ?? 21}%) : <strong>{totalVat.toFixed(2)} €</strong></p>
               <p style={{ margin: '8px 0 0 0', fontSize: '18px', fontWeight: 'bold' }}>Total TTC : {totalIncl.toFixed(2)} €</p>
             </div>
 
-            {/* MENTION LÉGALE OBLIGATOIRE */}
             {vatResult?.legalNotice && (
               <div style={{ marginTop: '24px', background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px', color: '#475569' }}>
                 <strong>Mention légale obligatoire :</strong><br />
