@@ -1,63 +1,59 @@
 import { describe, it, expect } from 'vitest';
-import { calculateBelgianVat } from './vatEngine';
+import { calculateVAT } from './vatEngine';
 
-describe('Moteur de TVA Belge - Travaux Immobiliers', () => {
-
-  // Test 1 : Cocontractant B2B (Art. 20)
-  it('doit appliquer l autoliquidation (0%) pour un client B2B assujetti en Belgique', () => {
-    const result = calculateBelgianVat({
-      transaction: { issueDate: '2026-07-25', currency: 'EUR' },
-      client: { type: 'COMPANY', countryCode: 'BE', submitsPeriodicVatReturns: true },
-      property: { countryCode: 'BE', usage: 'PRIVATE', firstOccupancyYear: 2010 },
-      service: { isRealEstateWork: true, targetScope: 'ENTIRE_BUILDING', description: 'Toiture' }
+describe('Tests du Moteur Fiscal TVA (Belgique 2025-2026)', () => {
+  it('B2B : Applique l autoliquidation 0% si VIES est valide', () => {
+    const res = calculateVAT({
+      lang: 'FR',
+      clientType: 'B2B',
+      isViesValid: true,
+      buildingAge: 'OVER_10',
+      buildingUsage: 'PRO_EXCLUSIVITY',
+      workCategory: 'RENOVATION_STANDARD',
     });
-
-    expect(result.taxRegime).toBe('REVERSE_CHARGE');
-    expect(result.rates[0].rate).toBe(0);
-    expect(result.legalMentionCode).toBe('AR1_ART20');
+    expect(res.isValid).toBe(true);
+    expect(res.vatRate).toBe(0);
+    expect(res.badgeText).toContain('0%');
   });
 
-  // Test 2 : Particulier - Logement >= 10 ans (6%)
-  it('doit appliquer le taux réduit de 6% pour une habitation privée de plus de 10 ans', () => {
-    const result = calculateBelgianVat({
-      transaction: { issueDate: '2026-07-25', currency: 'EUR' },
-      client: { type: 'INDIVIDUAL', countryCode: 'BE', submitsPeriodicVatReturns: false },
-      property: { countryCode: 'BE', usage: 'PRIVATE', firstOccupancyYear: 2012 }, // 14 ans d'ancienneté
-      service: { isRealEstateWork: true, targetScope: 'ENTIRE_BUILDING', description: 'Rénovation façade' }
+  it('B2C < 10 ans : Pompe à chaleur à 6%', () => {
+    const res = calculateVAT({
+      lang: 'NL',
+      clientType: 'B2C',
+      buildingAge: 'UNDER_10',
+      buildingUsage: 'PRIVATE_100',
+      workCategory: 'HEAT_PUMP',
     });
-
-    expect(result.taxRegime).toBe('REDUCED_6');
-    expect(result.rates[0].rate).toBe(6);
-    expect(result.legalMentionCode).toBe('AR20_TAB_A_XXXVIII');
+    expect(res.isValid).toBe(true);
+    expect(res.vatRate).toBe(6);
   });
 
-  // Test 3 : Particulier - Logement < 10 ans (21%)
-  it('doit appliquer le taux standard de 21% si la maison a moins de 10 ans', () => {
-    const result = calculateBelgianVat({
-      transaction: { issueDate: '2026-07-25', currency: 'EUR' },
-      client: { type: 'INDIVIDUAL', countryCode: 'BE', submitsPeriodicVatReturns: false },
-      property: { countryCode: 'BE', usage: 'PRIVATE', firstOccupancyYear: 2020 }, // 6 ans d'ancienneté
-      service: { isRealEstateWork: true, targetScope: 'ENTIRE_BUILDING', description: 'Carrelage' }
+  it('B2C ≥ 10 ans : Entretien courant reste à 21%', () => {
+    const res = calculateVAT({
+      lang: 'FR',
+      clientType: 'B2C',
+      buildingAge: 'OVER_10',
+      buildingUsage: 'PRIVATE_100',
+      workCategory: 'ROUTINE_MAINTENANCE',
     });
-
-    expect(result.taxRegime).toBe('STANDARD_21');
-    expect(result.rates[0].rate).toBe(21);
-    expect(result.legalMentionCode).toBeNull();
+    expect(res.isValid).toBe(true);
+    expect(res.vatRate).toBe(21);
   });
 
-  // Test 4 : Immeuble mixte avec scission des taux (Usage privé à 40%)
-  it('doit ventiler 6% / 21% pour un immeuble mixte si la partie privée est < 50%', () => {
-    const result = calculateBelgianVat({
-      transaction: { issueDate: '2026-07-25', currency: 'EUR' },
-      client: { type: 'INDIVIDUAL', countryCode: 'BE', submitsPeriodicVatReturns: false },
-      property: { countryCode: 'BE', usage: 'MIXED', firstOccupancyYear: 2005, privateUsePercentage: 40 },
-      service: { isRealEstateWork: true, targetScope: 'ENTIRE_BUILDING', description: 'Chauffage central' }
+  it('B2C ≥ 10 ans : Usage mixte avec Pro > Privé sur parcel ≥ 200m² ventile les taux', () => {
+    const res = calculateVAT({
+      lang: 'FR',
+      clientType: 'B2C',
+      buildingAge: 'OVER_10',
+      buildingUsage: 'MIXED',
+      plotArea: 250,
+      privateArea: 50,
+      proArea: 100,
+      workCategory: 'RENOVATION_STANDARD',
     });
-
-    expect(result.taxRegime).toBe('SPLIT_RATE');
-    expect(result.rates).toHaveLength(2);
-    expect(result.rates[0]).toEqual({ rate: 6, percentageOfTotal: 40 });
-    expect(result.rates[1]).toEqual({ rate: 21, percentageOfTotal: 60 });
+    expect(res.isValid).toBe(true);
+    expect(res.isSplitRate).toBe(true);
+    expect(res.proVatRate).toBe(21);
+    expect(res.privateVatRate).toBe(6);
   });
-
 });
