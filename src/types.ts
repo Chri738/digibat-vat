@@ -1,44 +1,63 @@
-export type VatRegime =
-  | 'normal'
-  | 'intra_eu'
-  | 'export'
-  | 'co_contractant';
+export type Language = 'FR' | 'NL';
+export type ClientType = 'B2C' | 'B2B';
+export type BuildingAge = 'UNDER_10' | 'OVER_EQUAL_10';
+export type BuildingUsage = '100_PRIVATE' | 'OVER_50_PRIVATE' | 'EXCLUSIVE_PRO' | 'MIXED';
 
-export interface ClientProfile {
-  name: string;
-  vatNumber: string;
-  country: 'BE' | 'FR' | 'NL' | 'DE' | 'LU' | 'other';
-  address: string;
-  isVatSubject: boolean;
-  viesValid: boolean | null;
-  manualConfirmSubject: boolean;
+export interface Country {
+  code: string;
+  nameFR: string;
+  nameNL: string;
+}
+
+export type WorkTypeId = 
+  | 'heat_pump'
+  | 'standard_reno'
+  | 'heavy_exterior'
+  | 'solar_insulation'
+  | 'solar_general'
+  | 'industrial_cleaning'
+  | 'tree_felling'
+  | 'paint_new'
+  | 'paint_old'
+  | 'routine_house_cleaning'
+  | 'routine_garden';
+
+export interface WorkCategory {
+  id: WorkTypeId;
+  labelFR: string;
+  labelNL: string;
 }
 
 export interface LineItem {
   id: string;
+  workTypeId?: WorkTypeId;
   description: string;
+  vatRate: number;
   quantity: number;
   unitPrice: number;
-  vatRate: number;
 }
 
-export interface Invoice {
-  id: string;
-  number: string;
-  date: string;
-  client: ClientProfile;
-  items: LineItem[];
-  regime: VatRegime;
-  vatMention: string | null;
-  notes: string;
+export interface FormState {
+  // Étape 1
+  language: Language;
+  countryCode: string;
+  clientType: ClientType;
+  clientName: string;
+  vatNumber: string;
+  isViesValidated: boolean;
+
+  // Étape 2
+  buildingAge: BuildingAge;
+  buildingUsage: BuildingUsage;
+  surfacePrivate: number;
+  surfacePro: number;
+  selectedWorkTypes: WorkTypeId[];
+  siteAddress: string;
+
+  // Étape Devis / Facture
+  contractorName: string;
+  contractorVat: string;
+  contractorAddress: string;
+  lineItems: LineItem[];
+  deliveryDate: string; // Uniquement pour la Facture
 }
-
-export const REGIME_LABELS: Record<VatRegime, string> = {
-  normal: 'Régime normal (TVA standard)',
-  intra_eu: 'Livraison intra-UE (TVA 0%)',
-  export: 'Exportation hors UE (TVA 0%)',
-  co_contractant: 'Co-contractant (TVA 0%)',
-};
-
-export const CO_CONTRACTANT_MENTION =
-  'TVA à acquitter par le co-contractant — Art. 20 KB nr 1';
