@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { FormState, LineItem } from './types';
-import { EU_COUNTRIES, WORK_CATEGORIES } from './translations';
-import * as vatModule from './vatEngine';
 
-// Sécurité : s'adapte automatiquement au nom de fonction présent dans vatEngine.ts
-const calculateVatRules = (vatModule as any).calculateVatRules || (vatModule as any).calculateVAT || (() => ({ rates: [{ rate: 21, label: 'Taux normal' }] }));
+// Données de secours intégrées (évite tout crash d'importation)
+const DEFAULT_COUNTRIES = ['BE', 'FR', 'NL', 'DE', 'LU'];
+const DEFAULT_WORK_CATEGORIES = [
+  { id: 'renov-standard', label: { FR: 'Travaux de rénovation (standard)', NL: 'Renovatiewerken (standaard)' } },
+  { id: 'renov-insulation', label: { FR: 'Isolation thermique / Énergie', NL: 'Isolatie / Energie' } },
+  { id: 'demolition-reconstruction', label: { FR: 'Démolition et reconstruction', NL: 'Sloop en Heropbouw' } }
+];
 
 export default function App() {
   const [activeStep, setActiveStep] = useState<number>(1);
-  const [state, setState] = useState<FormState>({
-    language: 'FR',
+  const [state, setState] = useState({
+    language: 'FR' as 'FR' | 'NL',
     countryCode: 'BE',
-    clientType: 'B2C',
+    clientType: 'B2C' as 'B2C' | 'B2B',
     clientName: '',
     vatNumber: '',
     isViesValidated: false,
@@ -24,7 +26,7 @@ export default function App() {
     contractorName: '',
     contractorVat: '',
     contractorAddress: '',
-    lineItems: [],
+    lineItems: [] as Array<{ id: string; description: string; quantity: number; unitPrice: number; vatRate: number }>,
     deliveryDate: ''
   });
 
@@ -37,29 +39,40 @@ export default function App() {
     }
   };
 
-  const getWorkLabel = (workId: string, lang: string) => {
-    const work = (WORK_CATEGORIES || []).find((w: any) => w.id === workId);
+  const getWorkLabel = (workId: string, lang: 'FR' | 'NL') => {
+    const work = DEFAULT_WORK_CATEGORIES.find((w) => w.id === workId);
     if (!work) return lang === 'NL' ? 'Bouwwerken' : 'Travaux de rénovation';
-    if (typeof work.label === 'string') return work.label;
-    if (typeof work.label === 'object' && work.label !== null) {
-      return work.label[lang as 'FR' | 'NL'] || work.label.FR || work.label.NL || 'Travaux';
-    }
-    return 'Travaux';
+    return work.label[lang] || work.label.FR;
   };
 
-  // Calcul sécurisé
-  let vatResult: any = { rates: [{ rate: 21, label: 'Taux normal 21%' }] };
-  try {
-    vatResult = calculateVatRules(state) || vatResult;
-  } catch (e) {
-    console.error("Erreur de calcul TVA:", e);
-  }
+  // Moteur de calcul TVA intégré (Réglementation belge)
+  const computeVat = () => {
+    if (state.clientType === 'B2B' && state.countryCode === 'BE') {
+      return {
+        rate: 0,
+        label: 'Autoliquidation (Art. 20 Arrêté Royal n°1)',
+        legalNotice: 'Autoliquidation - En l\'absence de contestation par écrit dans un délai de un mois à compter de la réception de la facture, le client est présumé reconnaître que les travaux sont effectués à un bâtiment d\'habitation dont la première occupation date d\'au moins 10 ans.'
+      };
+    }
+    if (state.buildingAge === 'OVER_EQUAL_10') {
+      return {
+        rate: 6,
+        label: 'Taux réduit 6% (Rénovation logement privé ≥ 10 ans)',
+        legalNotice: 'Taux de TVA réduit de 6% en vertu de la rubrique XXXVIII du tableau A de l\'annexe à l\'arrêté royal n° 20.'
+      };
+    }
+    return {
+      rate: 21,
+      label: 'Taux normal 21%',
+      legalNotice: ''
+    };
+  };
+
+  const vatResult = computeVat();
 
   const handleNavigateToStep = (targetStep: number) => {
-    if ((targetStep === 4 || targetStep === 5) && (state.lineItems.length === 0 || state.lineItems[0]?.description === '...')) {
+    if ((targetStep === 4 || targetStep === 5) && state.lineItems.length === 0) {
       const defaultLabel = getWorkLabel(state.selectedWorkTypes[0] || 'renov-standard', state.language);
-      const defaultRate = vatResult?.rates?.[0]?.rate ?? 21;
-      
       setState(prev => ({
         ...prev,
         lineItems: [
@@ -68,7 +81,7 @@ export default function App() {
             description: defaultLabel,
             quantity: 1,
             unitPrice: 150,
-            vatRate: defaultRate
+            vatRate: vatResult.rate
           }
         ]
       }));
@@ -78,13 +91,13 @@ export default function App() {
 
   const handleViesCheck = () => {
     if (state.vatNumber.trim().length > 5) {
-      setState({ ...state, isViesValidated: true });
+      setState(prev => ({ ...prev, isViesValidated: true }));
     } else {
       alert(state.language === 'NL' ? 'Ongeldig BTW-nummer' : 'Numéro de TVA invalide');
     }
   };
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
+  const updateLineItem = (id: string, field: string, value: any) => {
     setState(prev => ({
       ...prev,
       lineItems: prev.lineItems.map(item => 
@@ -94,13 +107,12 @@ export default function App() {
   };
 
   const addLineItem = () => {
-    const defaultRate = vatResult?.rates?.[0]?.rate ?? 21;
-    const newItem: LineItem = {
+    const newItem = {
       id: Date.now().toString(),
       description: '',
       quantity: 1,
       unitPrice: 0,
-      vatRate: defaultRate
+      vatRate: vatResult.rate
     };
     setState(prev => ({ ...prev, lineItems: [...prev.lineItems, newItem] }));
   };
@@ -112,8 +124,8 @@ export default function App() {
     }));
   };
 
-  const totalExcl = (state.lineItems || []).reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-  const totalVat = (state.lineItems || []).reduce((acc, item) => acc + (item.quantity * item.unitPrice * (item.vatRate / 100)), 0);
+  const totalExcl = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+  const totalVat = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice * (item.vatRate / 100)), 0);
   const totalIncl = totalExcl + totalVat;
 
   const isNL = state.language === 'NL';
@@ -121,7 +133,7 @@ export default function App() {
   return (
     <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' }}>
       
-      {/* HEADER */}
+      {/* EN-TÊTE */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '20px' }}>DIGIBÂT VAT / DIGIBOUW BTW</h1>
@@ -131,17 +143,17 @@ export default function App() {
         </div>
         <div>
           <button 
-            onClick={() => setState({ ...state, language: 'FR' })}
+            onClick={() => setState(prev => ({ ...prev, language: 'FR' }))}
             style={{ padding: '6px 12px', fontWeight: !isNL ? 'bold' : 'normal', background: !isNL ? '#2563eb' : '#e2e8f0', color: !isNL ? '#fff' : '#000', border: 'none', borderRadius: '4px 0 0 4px', cursor: 'pointer' }}
           >FR</button>
           <button 
-            onClick={() => setState({ ...state, language: 'NL' })}
+            onClick={() => setState(prev => ({ ...prev, language: 'NL' }))}
             style={{ padding: '6px 12px', fontWeight: isNL ? 'bold' : 'normal', background: isNL ? '#2563eb' : '#e2e8f0', color: isNL ? '#fff' : '#000', border: 'none', borderRadius: '0 4px 4px 0', cursor: 'pointer' }}
           >NL</button>
         </div>
       </div>
 
-      {/* NAVIGATION TABS */}
+      {/* ONGLETS NAVIGATION */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {[
           { id: 1, label: isNL ? 'Klantprofiel' : 'Profil Client' },
@@ -168,10 +180,10 @@ export default function App() {
         ))}
       </div>
 
-      {/* BLOC ETAPES */}
+      {/* CONTENU DES ÉTAPES */}
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px' }}>
         
-        {/* ETAPE 1 */}
+        {/* ÉTAPE 1 */}
         {activeStep === 1 && (
           <div>
             <h3>Étape 1 : {isNL ? 'Klantprofiel' : 'Profil Client'}</h3>
@@ -182,10 +194,10 @@ export default function App() {
                 </label>
                 <select 
                   value={state.countryCode} 
-                  onChange={(e) => setState({ ...state, countryCode: e.target.value })}
+                  onChange={(e) => setState(prev => ({ ...prev, countryCode: e.target.value }))}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
-                  {(EU_COUNTRIES || ['BE', 'FR', 'NL', 'DE']).map((code: string) => (
+                  {DEFAULT_COUNTRIES.map((code) => (
                     <option key={code} value={code}>
                       {getCountryName(code, state.language)} ({code})
                     </option>
@@ -198,8 +210,8 @@ export default function App() {
                   {isNL ? 'Statuut klant' : 'Statut du client'}
                 </label>
                 <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                  <label><input type="radio" checked={state.clientType === 'B2C'} onChange={() => setState({ ...state, clientType: 'B2C' })} /> Particulier (B2C)</label>
-                  <label><input type="radio" checked={state.clientType === 'B2B'} onChange={() => setState({ ...state, clientType: 'B2B' })} /> Assujetti (B2B)</label>
+                  <label><input type="radio" checked={state.clientType === 'B2C'} onChange={() => setState(prev => ({ ...prev, clientType: 'B2C' }))} /> Particulier (B2C)</label>
+                  <label><input type="radio" checked={state.clientType === 'B2B'} onChange={() => setState(prev => ({ ...prev, clientType: 'B2B' }))} /> Assujetti (B2B)</label>
                 </div>
               </div>
 
@@ -210,7 +222,7 @@ export default function App() {
                 <input 
                   type="text" 
                   value={state.clientName} 
-                  onChange={(e) => setState({ ...state, clientName: e.target.value })} 
+                  onChange={(e) => setState(prev => ({ ...prev, clientName: e.target.value }))} 
                   placeholder="Ex: Livlina NV" 
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 />
@@ -225,7 +237,7 @@ export default function App() {
                     <input 
                       type="text" 
                       value={state.vatNumber} 
-                      onChange={(e) => setState({ ...state, vatNumber: e.target.value, isViesValidated: false })} 
+                      onChange={(e) => setState(prev => ({ ...prev, vatNumber: e.target.value, isViesValidated: false }))} 
                       placeholder="BE 0123.456.789" 
                       style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                     />
@@ -252,7 +264,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ETAPE 2 */}
+        {/* ÉTAPE 2 */}
         {activeStep === 2 && (
           <div>
             <h3>Étape 2 : {isNL ? 'Pand & Werken' : 'Bien Immobilier & Nature des Travaux'}</h3>
@@ -263,7 +275,7 @@ export default function App() {
                 </label>
                 <select 
                   value={state.buildingAge} 
-                  onChange={(e) => setState({ ...state, buildingAge: e.target.value as any })}
+                  onChange={(e) => setState(prev => ({ ...prev, buildingAge: e.target.value as any }))}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
                   <option value="UNDER_10">{isNL ? '< 10 jaar' : '< 10 ans'}</option>
@@ -277,7 +289,7 @@ export default function App() {
                 </label>
                 <select 
                   value={state.buildingUsage} 
-                  onChange={(e) => setState({ ...state, buildingUsage: e.target.value as any })}
+                  onChange={(e) => setState(prev => ({ ...prev, buildingUsage: e.target.value as any }))}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
                   <option value="100_PRIVATE">100% Privé</option>
@@ -287,46 +299,18 @@ export default function App() {
               </div>
             </div>
 
-            {state.buildingUsage === 'MIXED' && (
-              <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '16px', borderRadius: '8px', marginTop: '16px' }}>
-                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#854d0e', fontWeight: 'bold' }}>
-                  ⚠️ Règle d'usage mixte (Superficie totale ≥ 200 m² requise pour taux réduit)
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px' }}>Surface Privée (m²)</label>
-                    <input 
-                      type="number" 
-                      value={state.surfacePrivate || ''} 
-                      onChange={(e) => setState({ ...state, surfacePrivate: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px' }}>Surface Professionnelle (m²)</label>
-                    <input 
-                      type="number" 
-                      value={state.surfacePro || ''} 
-                      onChange={(e) => setState({ ...state, surfacePro: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div style={{ marginTop: '16px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>
                 {isNL ? 'Aard van de werken' : 'Nature principale des travaux'}
               </label>
               <select 
                 value={state.selectedWorkTypes[0] || 'renov-standard'} 
-                onChange={(e) => setState({ ...state, selectedWorkTypes: [e.target.value] })}
+                onChange={(e) => setState(prev => ({ ...prev, selectedWorkTypes: [e.target.value] }))}
                 style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
               >
-                {(WORK_CATEGORIES || []).map((work: any) => (
+                {DEFAULT_WORK_CATEGORIES.map((work) => (
                   <option key={work.id} value={work.id}>
-                    {getWorkLabel(work.id, state.language)}
+                    {work.label[state.language]}
                   </option>
                 ))}
               </select>
@@ -339,7 +323,7 @@ export default function App() {
               <input 
                 type="text" 
                 value={state.siteAddress} 
-                onChange={(e) => setState({ ...state, siteAddress: e.target.value })}
+                onChange={(e) => setState(prev => ({ ...prev, siteAddress: e.target.value }))}
                 placeholder="Heidestraat 43, 9070 Destelbergen" 
                 style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
               />
@@ -354,7 +338,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ETAPE 3 */}
+        {/* ÉTAPE 3 */}
         {activeStep === 3 && (
           <div>
             <h3>Étape 3 : Régime TVA Déterminé</h3>
@@ -362,13 +346,13 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Taux applicable :</span>
                 <span style={{ padding: '6px 16px', background: '#dcfce7', color: '#15803d', fontWeight: 'bold', borderRadius: '20px', fontSize: '16px' }}>
-                  ✓ {vatResult?.rates?.[0]?.rate ?? 21}% {vatResult?.rates?.[0]?.rate === 0 ? '(Autoliquidation / Verlegging van heffing)' : ''}
+                  ✓ {vatResult.rate}% {vatResult.rate === 0 ? '(Autoliquidation / Verlegging van heffing)' : ''}
                 </span>
               </div>
               <p style={{ fontSize: '13px', marginTop: '12px', color: '#334155' }}>
-                <strong>Détail :</strong> {vatResult?.rates?.[0]?.label ?? 'Taux normal 21%'}
+                <strong>Détail :</strong> {vatResult.label}
               </p>
-              {vatResult?.legalNotice && (
+              {vatResult.legalNotice && (
                 <div style={{ marginTop: '16px', background: '#eff6ff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb' }}>
                   <strong style={{ fontSize: '12px', color: '#1e40af' }}>Mention légale obligatoire :</strong>
                   <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#1e3a8a', fontStyle: 'italic' }}>
@@ -395,7 +379,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ETAPE 4 ET 5 */}
+        {/* ÉTAPES 4 & 5 */}
         {(activeStep === 4 || activeStep === 5) && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', marginBottom: '20px' }}>
@@ -406,16 +390,16 @@ export default function App() {
                 </span>
               </div>
               <span style={{ padding: '6px 12px', background: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderRadius: '12px', fontSize: '13px' }}>
-                ✓ {vatResult?.rates?.[0]?.rate ?? 21}% {vatResult?.rates?.[0]?.rate === 0 ? '(Autoliquidation)' : ''}
+                ✓ {vatResult.rate}% {vatResult.rate === 0 ? '(Autoliquidation)' : ''}
               </span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
               <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569', textTransform: 'uppercase' }}>Prestataire / Entrepreneur</h4>
-                <input type="text" placeholder="Mira sarl" value={state.contractorName} onChange={(e) => setState({ ...state, contractorName: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                <input type="text" placeholder="BE 0552.235.026" value={state.contractorVat} onChange={(e) => setState({ ...state, contractorVat: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                <input type="text" placeholder="Adresse..." value={state.contractorAddress} onChange={(e) => setState({ ...state, contractorAddress: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                <input type="text" placeholder="Mira sarl" value={state.contractorName} onChange={(e) => setState(prev => ({ ...prev, contractorName: e.target.value }))} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                <input type="text" placeholder="BE 0552.235.026" value={state.contractorVat} onChange={(e) => setState(prev => ({ ...prev, contractorVat: e.target.value }))} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                <input type="text" placeholder="Adresse..." value={state.contractorAddress} onChange={(e) => setState(prev => ({ ...prev, contractorAddress: e.target.value }))} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
               </div>
 
               <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', fontSize: '13px' }}>
@@ -481,11 +465,11 @@ export default function App() {
 
             <div style={{ marginTop: '20px', width: '300px', marginLeft: 'auto', textAlign: 'right', fontSize: '14px' }}>
               <p style={{ margin: '4px 0' }}>Subtotaal EXCL. BTW : <strong>{totalExcl.toFixed(2)} €</strong></p>
-              <p style={{ margin: '4px 0', color: '#2563eb' }}>Montant TVA ({vatResult?.rates?.[0]?.rate ?? 21}%) : <strong>{totalVat.toFixed(2)} €</strong></p>
+              <p style={{ margin: '4px 0', color: '#2563eb' }}>Montant TVA ({vatResult.rate}%) : <strong>{totalVat.toFixed(2)} €</strong></p>
               <p style={{ margin: '8px 0 0 0', fontSize: '18px', fontWeight: 'bold' }}>Total TTC : {totalIncl.toFixed(2)} €</p>
             </div>
 
-            {vatResult?.legalNotice && (
+            {vatResult.legalNotice && (
               <div style={{ marginTop: '24px', background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px', color: '#475569' }}>
                 <strong>Mention légale obligatoire :</strong><br />
                 <em>{vatResult.legalNotice}</em>
