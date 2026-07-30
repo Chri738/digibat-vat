@@ -16,7 +16,7 @@ export default function App() {
     buildingUsage: '100_PRIVATE',
     surfacePrivate: 0,
     surfacePro: 0,
-    selectedWorkTypes: [],
+    selectedWorkTypes: ['renov-standard'],
     siteAddress: '',
     contractorName: '',
     contractorVat: '',
@@ -25,548 +25,454 @@ export default function App() {
     deliveryDate: ''
   });
 
-  const t = TRANSLATIONS[state.language];
+  const t = TRANSLATIONS[state.language as 'FR' | 'NL'] || TRANSLATIONS.FR;
 
-  // Permutateur de langue
-  const setLanguage = (lang: 'FR' | 'NL') => {
-    setState(prev => ({ ...prev, language: lang }));
+  // Formateur pour afficher le nom complet des pays de l'UE
+  const regionNames = new Intl.DisplayNames([state.language.toLowerCase()], { type: 'region' });
+
+  // Calcul automatique des règles TVA
+  const vatResult = calculateVatRules(state);
+
+  // Fonction pour récupérer le libellé de la prestation sélectionnée à l'Étape 2
+  const getSelectedWorkLabel = (): string => {
+    const selectedId = state.selectedWorkTypes[0] || 'renov-standard';
+    const work = WORK_CATEGORIES.find(w => w.id === selectedId);
+    if (!work) return state.language === 'NL' ? 'Bouwwerken' : 'Travaux de rénovation';
+    return state.language === 'NL' ? work.label.NL : work.label.FR;
   };
 
-  // Simulation Validation VIES
+  // Changement d'étape avec initialisation de la ligne de devis/facture
+  const handleNavigateToStep = (targetStep: number) => {
+    if ((targetStep === 4 || targetStep === 5) && (state.lineItems.length === 0 || state.lineItems[0]?.description === '...')) {
+      const defaultLabel = getSelectedWorkLabel();
+      const defaultRate = vatResult.rates[0]?.rate ?? 21;
+      
+      setState(prev => ({
+        ...prev,
+        lineItems: [
+          {
+            id: '1',
+            description: defaultLabel,
+            quantity: 1,
+            unitPrice: 150,
+            vatRate: defaultRate
+          }
+        ]
+      }));
+    }
+    setActiveStep(targetStep);
+  };
+
   const handleViesCheck = () => {
-    if (state.vatNumber.trim().length > 6) {
-      setState(prev => ({ ...prev, isViesValidated: true }));
+    if (state.vatNumber.trim().length > 5) {
+      setState({ ...state, isViesValidated: true });
     } else {
-      alert(t.viesError);
+      alert(state.language === 'NL' ? 'Ongeldig BTW-nummer' : 'Numéro de TVA invalide');
     }
   };
 
-  // Basculer la sélection des travaux à l'Étape 2
-  const toggleWorkType = (id: any) => {
-    setState(prev => {
-      const exists = prev.selectedWorkTypes.includes(id);
-      const updated = exists 
-        ? prev.selectedWorkTypes.filter(item => item !== id)
-        : [...prev.selectedWorkTypes, id];
-      return { ...prev, selectedWorkTypes: updated };
-    });
-  };
-
-  // Calcul du moteur fiscal & Synchronisation des lignes du Devis
-  const processFiscalEngine = () => {
-    const result = calculateVatRules(state);
-    
-    // Génération automatique des lignes héritées de l'Étape 2
-    const generatedItems: LineItem[] = result.rates.map((r, index) => ({
-      id: `line-${index}-${Date.now()}`,
-      workTypeId: r.workTypeId,
-      description: r.label,
-      vatRate: r.rate,
-      quantity: 1,
-      unitPrice: 0.00
-    }));
-
-    setState(prev => ({ ...prev, lineItems: generatedItems }));
-    setActiveStep(3);
-  };
-
-  // Mise à jour d'une ligne du Devis/Facture (Seules Quantité et Prix unitaire sont modifiables)
-  const updateLineItem = (id: string, field: 'quantity' | 'unitPrice', value: number) => {
+  const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
     setState(prev => ({
       ...prev,
-      lineItems: prev.lineItems.map(item => item.id === id ? { ...item, [field]: value } : item)
+      lineItems: prev.lineItems.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
     }));
   };
 
-  // Ajouter une ligne libre au Devis
-  const addCustomLine = () => {
+  const addLineItem = () => {
+    const defaultRate = vatResult.rates[0]?.rate ?? 21;
     const newItem: LineItem = {
-      id: `custom-${Date.now()}`,
+      id: Date.now().toString(),
       description: '',
-      vatRate: state.clientType === 'B2B' ? 0 : 21,
       quantity: 1,
-      unitPrice: 0.00
+      unitPrice: 0,
+      vatRate: defaultRate
     };
     setState(prev => ({ ...prev, lineItems: [...prev.lineItems, newItem] }));
   };
 
-  // Calculs financiers
-  const vatResult = calculateVatRules(state);
-  const subtotalExcl = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-  const totalVat = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice * (item.vatRate / 100)), 0);
-  const totalIncl = subtotalExcl + totalVat;
+  const removeLineItem = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      lineItems: prev.lineItems.filter(item => item.id !== id)
+    }));
+  };
 
-  const totalBuildingSurface = state.surfacePrivate + state.surfacePro;
-  const isMixedUsageInvalid = state.buildingUsage === 'MIXED' && totalBuildingSurface < 200;
+  // Calculs financiers
+  const totalExcl = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+  const totalVat = state.lineItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice * (item.vatRate / 100)), 0);
+  const totalIncl = totalExcl + totalVat;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-8 font-sans">
-      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+    <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      
+      {/* HEADER & CHOIX DE LA LANGUE */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '20px' }}>DIGIBÂT VAT / DIGIBOUW BTW</h1>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>{t.title}</p>
+        </div>
+        <div>
+          <span style={{ fontSize: '12px', marginRight: '8px', color: '#475569' }}>Langue / Taal :</span>
+          <button 
+            onClick={() => setState({ ...state, language: 'FR' })}
+            style={{ padding: '6px 12px', fontWeight: state.language === 'FR' ? 'bold' : 'normal', background: state.language === 'FR' ? '#2563eb' : '#e2e8f0', color: state.language === 'FR' ? '#fff' : '#000', border: 'none', borderRadius: '4px 0 0 4px', cursor: 'pointer' }}
+          >FR</button>
+          <button 
+            onClick={() => setState({ ...state, language: 'NL' })}
+            style={{ padding: '6px 12px', fontWeight: state.language === 'NL' ? 'bold' : 'normal', background: state.language === 'NL' ? '#2563eb' : '#e2e8f0', color: state.language === 'NL' ? '#fff' : '#000', border: 'none', borderRadius: '0 4px 4px 0', cursor: 'pointer' }}
+          >NL</button>
+        </div>
+      </div>
+
+      {/* TABS NAVIGATION */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+        {[
+          { id: 1, label: t.steps.client },
+          { id: 2, label: t.steps.property },
+          { id: 3, label: t.steps.engine },
+          { id: 4, label: `📄 ${t.steps.quote}` },
+          { id: 5, label: `🧾 ${t.steps.invoice}` }
+        ].map(step => (
+          <button
+            key={step.id}
+            onClick={() => handleNavigateToStep(step.id)}
+            style={{
+              padding: '10px 16px',
+              border: 'none',
+              borderRadius: '6px',
+              background: activeStep === step.id ? '#2563eb' : '#f1f5f9',
+              color: activeStep === step.id ? '#fff' : '#475569',
+              fontWeight: activeStep === step.id ? 'bold' : 'normal',
+              cursor: 'pointer'
+            }}
+          >
+            {step.id}. {step.label}
+          </button>
+        ))}
+      </div>
+
+      {/* CONTAINER PRINCIPAL */}
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px' }}>
         
-        {/* En-tête principal */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 bg-white border-b border-slate-200 gap-4">
+        {/* ÉTAPE 1 : PROFIL CLIENT */}
+        {activeStep === 1 && (
           <div>
-            <h1 className="text-2xl font-extrabold text-blue-900 tracking-tight">{t.appTitle}</h1>
-            <p className="text-xs text-slate-500 mt-1">{t.appSubTitle}</p>
-          </div>
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <span className="text-xs font-semibold mr-2 px-2 text-slate-600">Taal / Langue :</span>
-            <button
-              onClick={() => setLanguage('FR')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition ${state.language === 'FR' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:text-black'}`}
-            >
-              FR
-            </button>
-            <button
-              onClick={() => setLanguage('NL')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition ${state.language === 'NL' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:text-black'}`}
-            >
-              NL
-            </button>
-          </div>
-        </div>
-
-        {/* Barre de navigation / Étapes */}
-        <div className="flex overflow-x-auto bg-slate-100 border-b border-slate-200 p-2 gap-2 text-xs font-medium">
-          <button onClick={() => setActiveStep(1)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${activeStep === 1 ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white text-slate-700 hover:bg-slate-200'}`}>{t.step1}</button>
-          <button onClick={() => setActiveStep(2)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${activeStep === 2 ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white text-slate-700 hover:bg-slate-200'}`}>{t.step2}</button>
-          <button onClick={() => setActiveStep(3)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${activeStep === 3 ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white text-slate-700 hover:bg-slate-200'}`}>{t.step3}</button>
-          <button onClick={() => setActiveStep(4)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${activeStep === 4 ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white text-slate-700 hover:bg-slate-200'}`}>📄 {t.screenQuote}</button>
-          <button onClick={() => setActiveStep(5)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${activeStep === 5 ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white text-slate-700 hover:bg-slate-200'}`}>📑 {t.screenInvoice}</button>
-        </div>
-
-        <div className="p-6">
-          
-          {/* ÉTAPE 1 : PROFIL CLIENT */}
-          {activeStep === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-slate-800">{t.step1Title}</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">{t.clientCountry}</label>
-                  <select
-                    value={state.countryCode}
-                    onChange={e => setState({ ...state, countryCode: e.target.value })}
-                    className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    {EU_COUNTRIES.map(c => (
-                      <option key={c.code} value={c.code}>
-                        {state.language === 'NL' ? c.nameNL : c.nameFR} ({c.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">{t.clientStatus}</label>
-                  <div className="flex gap-4 mt-2">
-                    <label className="flex items-center text-sm font-medium cursor-pointer">
-                      <input
-                        type="radio"
-                        name="clientType"
-                        checked={state.clientType === 'B2C'}
-                        onChange={() => setState({ ...state, clientType: 'B2C' })}
-                        className="mr-2 h-4 w-4 text-blue-600"
-                      />
-                      {t.b2c}
-                    </label>
-                    <label className="flex items-center text-sm font-medium cursor-pointer">
-                      <input
-                        type="radio"
-                        name="clientType"
-                        checked={state.clientType === 'B2B'}
-                        onChange={() => setState({ ...state, clientType: 'B2B' })}
-                        className="mr-2 h-4 w-4 text-blue-600"
-                      />
-                      {t.b2b}
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">{t.clientName}</label>
-                  <input
-                    type="text"
-                    value={state.clientName}
-                    onChange={e => setState({ ...state, clientName: e.target.value })}
-                    placeholder="Nom / Bedrijf..."
-                    className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-
-                {state.clientType === 'B2B' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">{t.vatNumber}</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={state.vatNumber}
-                        onChange={e => setState({ ...state, vatNumber: e.target.value, isViesValidated: false })}
-                        placeholder="BE 0123.456.789"
-                        className="flex-1 p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                      <button
-                        onClick={handleViesCheck}
-                        className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 transition"
-                      >
-                        {t.viesBtn}
-                      </button>
-                    </div>
-                    {state.isViesValidated && (
-                      <p className="text-xs text-green-600 font-bold mt-2">{t.viesSuccess}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end mt-8">
-                <button
-                  disabled={state.clientType === 'B2B' && !state.isViesValidated}
-                  onClick={() => setActiveStep(2)}
-                  className={`px-6 py-2.5 text-xs font-bold text-white rounded-lg transition ${
-                    state.clientType === 'B2B' && !state.isViesValidated
-                      ? 'bg-slate-300 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700 shadow-md'
-                  }`}
+            <h3>Étape 1 : {t.steps.client}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.clientCountry}</label>
+                <select 
+                  value={state.countryCode} 
+                  onChange={(e) => setState({ ...state, countryCode: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
-                  {t.nextStep}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ÉTAPE 2 : BIEN IMMOBILIER & TRAVAUX */}
-          {activeStep === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-slate-800">{t.step2Title}</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">{t.buildingAge}</label>
-                  <select
-                    value={state.buildingAge}
-                    onChange={e => setState({ ...state, buildingAge: e.target.value as any })}
-                    className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="UNDER_10">{t.under10}</option>
-                    <option value="OVER_EQUAL_10">{t.over10}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">{t.buildingUsage}</label>
-                  <select
-                    value={state.buildingUsage}
-                    onChange={e => setState({ ...state, buildingUsage: e.target.value as any })}
-                    className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="100_PRIVATE">{t.usage100Private}</option>
-                    <option value="OVER_50_PRIVATE">{t.usageOver50Private}</option>
-                    <option value="EXCLUSIVE_PRO">{t.usageExclusivePro}</option>
-                    <option value="MIXED">{t.usageMixed}</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Formulaire spécifique Usage Mixte */}
-              {state.buildingUsage === 'MIXED' && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
-                  <p className="text-xs text-amber-800 font-medium">⚠️ {t.mixedWarning}</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">{t.surfacePrivateLabel}</label>
-                      <input
-                        type="number"
-                        value={state.surfacePrivate || ''}
-                        onChange={e => setState({ ...state, surfacePrivate: Number(e.target.value) })}
-                        placeholder="Ex: 120"
-                        className="w-full p-2 text-sm border border-slate-300 rounded-md outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">{t.surfaceProLabel}</label>
-                      <input
-                        type="number"
-                        value={state.surfacePro || ''}
-                        onChange={e => setState({ ...state, surfacePro: Number(e.target.value) })}
-                        placeholder="Ex: 90"
-                        className="w-full p-2 text-sm border border-slate-300 rounded-md outline-none"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs font-bold text-slate-600">
-                    Surface totale construite : {totalBuildingSurface} m² 
-                    {isMixedUsageInvalid && <span className="text-red-600 font-bold ml-2">(< 200 m² requise)</span>}
-                  </p>
-                </div>
-              )}
-
-              {/* Sélection des Travaux */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2">{t.natureWorks}</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-slate-50 p-4 border border-slate-200 rounded-lg max-h-60 overflow-y-auto">
-                  {WORK_CATEGORIES.map(cat => (
-                    <label key={cat.id} className="flex items-start text-xs p-2 rounded hover:bg-slate-100 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={state.selectedWorkTypes.includes(cat.id)}
-                        onChange={() => toggleWorkType(cat.id)}
-                        className="mt-0.5 mr-2 h-4 w-4 text-blue-600 rounded"
-                      />
-                      <span>{state.language === 'NL' ? cat.labelNL : cat.labelFR}</span>
-                    </label>
+                  {EU_COUNTRIES.map(code => (
+                    <option key={code} value={code}>
+                      {regionNames.of(code) || code} ({code})
+                    </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.clientStatus}</label>
+                <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+                  <label><input type="radio" checked={state.clientType === 'B2C'} onChange={() => setState({ ...state, clientType: 'B2C' })} /> {t.b2c}</label>
+                  <label><input type="radio" checked={state.clientType === 'B2B'} onChange={() => setState({ ...state, clientType: 'B2B' })} /> {t.b2b}</label>
                 </div>
               </div>
 
-              {/* Adresse du chantier */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">{t.siteAddress}</label>
-                <input
-                  type="text"
-                  value={state.siteAddress}
-                  onChange={e => setState({ ...state, siteAddress: e.target.value })}
-                  placeholder={t.siteAddressPlaceholder}
-                  className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.clientName}</label>
+                <input 
+                  type="text" 
+                  value={state.clientName} 
+                  onChange={(e) => setState({ ...state, clientName: e.target.value })} 
+                  placeholder="Nom du client..." 
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 />
               </div>
 
-              <div className="flex justify-between mt-8">
-                <button
-                  onClick={() => setActiveStep(1)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-200 rounded-lg hover:bg-slate-300"
-                >
-                  {t.backBtn}
-                </button>
-                <button
-                  disabled={state.selectedWorkTypes.length === 0}
-                  onClick={processFiscalEngine}
-                  className={`px-6 py-2.5 text-xs font-bold text-white rounded-lg transition ${
-                    state.selectedWorkTypes.length === 0 ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md'
-                  }`}
-                >
-                  {t.calculateVat}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ÉTAPE 3 : RESULTAT FISCAL */}
-          {activeStep === 3 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-slate-800">{t.step3Title}</h2>
-
-              {isMixedUsageInvalid && (
-                <div className="p-4 bg-red-100 text-red-700 rounded-lg text-xs font-bold">
-                  ❌ Attention : La surface totale construite du bâtiment est inférieure à 200 m². L'application applique le régime par défaut selon les règles fiscales.
+              {state.clientType === 'B2B' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.vatNumber}</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      value={state.vatNumber} 
+                      onChange={(e) => setState({ ...state, vatNumber: e.target.value, isViesValidated: false })} 
+                      placeholder="BE 0123.456.789" 
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                    <button 
+                      onClick={handleViesCheck} 
+                      style={{ padding: '10px 16px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                    >
+                      {t.checkVies}
+                    </button>
+                  </div>
+                  {state.isViesValidated && (
+                    <p style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', fontWeight: 'bold' }}>✓ TVA VIES Validée (OK)</p>
+                  )}
                 </div>
               )}
+            </div>
+            
+            <button 
+              onClick={() => setActiveStep(2)} 
+              style={{ marginTop: '24px', padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', float: 'right' }}
+            >
+              Étape suivante →
+            </button>
+          </div>
+        )}
 
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg space-y-3">
-                <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t.verdictSummary}</h3>
-                <ul className="space-y-2">
-                  {vatResult.rates.map((r, i) => (
-                    <li key={i} className="flex justify-between items-center text-xs p-2 bg-white rounded border border-slate-200">
-                      <span className="font-medium text-slate-800">{r.label}</span>
-                      <span className="font-extrabold px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full">{r.rate}% TVA</span>
-                    </li>
-                  ))}
-                </ul>
+        {/* ÉTAPE 2 : BIEN IMMOBILIER & TRAVAUX */}
+        {activeStep === 2 && (
+          <div>
+            <h3>Étape 2 : {t.steps.property}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.buildingAge}</label>
+                <select 
+                  value={state.buildingAge} 
+                  onChange={(e) => setState({ ...state, buildingAge: e.target.value as any })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                >
+                  <option value="UNDER_10">{t.under10}</option>
+                  <option value="OVER_EQUAL_10">{t.over10}</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.buildingUsage}</label>
+                <select 
+                  value={state.buildingUsage} 
+                  onChange={(e) => setState({ ...state, buildingUsage: e.target.value as any })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                >
+                  <option value="100_PRIVATE">{t.private100}</option>
+                  <option value="OVER_50_PRIVATE">{t.privateOver50}</option>
+                  <option value="MIXED">{t.mixed}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* CHAMPS SURFACES (Si usage mixte) */}
+            {state.buildingUsage === 'MIXED' && (
+              <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '16px', borderRadius: '8px', marginTop: '16px' }}>
+                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#854d0e', fontWeight: 'bold' }}>
+                  ⚠️ Règle d'usage mixte (Superficie totale ≥ 200 m² requise pour taux réduit)
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px' }}>Surface Privée (m²)</label>
+                    <input 
+                      type="number" 
+                      value={state.surfacePrivate || ''} 
+                      onChange={(e) => setState({ ...state, surfacePrivate: Number(e.target.value) })}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px' }}>Surface Professionnelle (m²)</label>
+                    <input 
+                      type="number" 
+                      value={state.surfacePro || ''} 
+                      onChange={(e) => setState({ ...state, surfacePro: Number(e.target.value) })}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.workNature}</label>
+              <select 
+                value={state.selectedWorkTypes[0] || 'renov-standard'} 
+                onChange={(e) => setState({ ...state, selectedWorkTypes: [e.target.value] })}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+              >
+                {WORK_CATEGORIES.map(work => (
+                  <option key={work.id} value={work.id}>
+                    {state.language === 'NL' ? work.label.NL : work.label.FR}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>{t.siteAddress}</label>
+              <input 
+                type="text" 
+                value={state.siteAddress} 
+                onChange={(e) => setState({ ...state, siteAddress: e.target.value })}
+                placeholder="Rue de la Station 12, 1000 Bruxelles" 
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+              />
+            </div>
+
+            <button 
+              onClick={() => setActiveStep(3)} 
+              style={{ marginTop: '24px', padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', float: 'right' }}
+            >
+              {t.calculateVat} →
+            </button>
+          </div>
+        )}
+
+        {/* ÉTAPE 3 : RÉSULTAT DU CALCUL TVA */}
+        {activeStep === 3 && (
+          <div>
+            <h3>Étape 3 : {t.steps.engine}</h3>
+            
+            <div style={{ marginTop: '20px', padding: '20px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{t.applicableRate} :</span>
+                <span style={{ padding: '6px 16px', background: '#dcfce7', color: '#15803d', fontWeight: 'bold', borderRadius: '20px', fontSize: '16px' }}>
+                  ✓ {vatResult.rates[0]?.rate}% {vatResult.rates[0]?.rate === 0 ? '(Autoliquidation)' : ''}
+                </span>
+              </div>
+
+              <div style={{ marginTop: '16px' }}>
+                <p style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}>
+                  <strong>Description :</strong> {vatResult.rates[0]?.label}
+                </p>
               </div>
 
               {vatResult.legalNotice && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs font-bold text-blue-900 mb-1">{t.legalMentionHeader}</p>
-                  <p className="text-xs italic text-blue-800">{vatResult.legalNotice}</p>
+                <div style={{ marginTop: '16px', background: '#eff6ff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb' }}>
+                  <strong style={{ fontSize: '12px', color: '#1e40af' }}>{t.legalNotice} :</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#1e3a8a', italic: 'true' }}>
+                    "{vatResult.legalNotice}"
+                  </p>
                 </div>
               )}
+            </div>
 
-              <div className="flex justify-between mt-8">
-                <button
-                  onClick={() => setActiveStep(2)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-200 rounded-lg hover:bg-slate-300"
-                >
-                  {t.backBtn}
-                </button>
-                <button
-                  onClick={() => setActiveStep(4)}
-                  className="px-6 py-2.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md transition"
-                >
-                  {t.generateQuote}
-                </button>
+            <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => handleNavigateToStep(4)} 
+                style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                📝 Générer le Devis
+              </button>
+              <button 
+                onClick={() => handleNavigateToStep(5)} 
+                style={{ padding: '12px 24px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                🧾 Générer la Facture
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ÉTAPE 4 ET 5 : DEVIS ET FACTURE */}
+        {(activeStep === 4 || activeStep === 5) && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', pb: '12px', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ margin: 0 }}>{activeStep === 4 ? 'DEVIS / OFFERTE' : 'FACTURE / FACTUUR'}</h2>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  N° : {activeStep === 4 ? 'DEV-2026-001' : 'FAC-2026-001'} | Date : {new Date().toLocaleDateString('fr-BE')}
+                </span>
+              </div>
+              <span style={{ padding: '6px 12px', background: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderRadius: '12px', fontSize: '13px' }}>
+                ✓ {vatResult.rates[0]?.rate}% {vatResult.rates[0]?.rate === 0 ? '(Autoliquidation)' : ''}
+              </span>
+            </div>
+
+            {/* INFOS PRESTATAIRE & CLIENT */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569', textTransform: 'uppercase' }}>Prestataire / Entrepreneur</h4>
+                <input type="text" placeholder="Nom entreprise..." value={state.contractorName} onChange={(e) => setState({ ...state, contractorName: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                <input type="text" placeholder="N° TVA (BE 0...)" value={state.contractorVat} onChange={(e) => setState({ ...state, contractorVat: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                <input type="text" placeholder="Adresse entreprise..." value={state.contractorAddress} onChange={(e) => setState({ ...state, contractorAddress: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', fontSize: '13px' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569', textTransform: 'uppercase' }}>Client & Chantier</h4>
+                <p style={{ margin: '4px 0' }}><strong>Client :</strong> {state.clientName || 'Non renseigné'}</p>
+                <p style={{ margin: '4px 0' }}><strong>N° BTW :</strong> {state.vatNumber || 'Particulier (B2C)'}</p>
+                <p style={{ margin: '4px 0' }}><strong>Adresse Chantier :</strong> {state.siteAddress || 'Non renseignée'}</p>
               </div>
             </div>
-          )}
 
-          {/* ÉCRAN DEVIS & FACTURE (ÉTAPES 4 ET 5) */}
-          {(activeStep === 4 || activeStep === 5) && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center border-b pb-4">
-                <h2 className="text-xl font-bold text-slate-800">
-                  {activeStep === 4 ? `${t.quoteTitle} N° DEV-2026-001` : `${t.invoiceTitle} N° FACT-2026-001`}
-                </h2>
-                <span className="text-xs text-slate-500 font-mono">Date : {new Date().toLocaleDateString()}</span>
-              </div>
-
-              {/* Prestataire et Client */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-                  <h3 className="text-xs font-bold text-slate-600 uppercase">{t.contractorSection}</h3>
-                  <input
-                    type="text"
-                    value={state.contractorName}
-                    onChange={e => setState({ ...state, contractorName: e.target.value })}
-                    placeholder={t.contractorName}
-                    className="w-full p-1.5 text-xs border border-slate-300 rounded outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={state.contractorVat}
-                    onChange={e => setState({ ...state, contractorVat: e.target.value })}
-                    placeholder={t.contractorVat}
-                    className="w-full p-1.5 text-xs border border-slate-300 rounded outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={state.contractorAddress}
-                    onChange={e => setState({ ...state, contractorAddress: e.target.value })}
-                    placeholder={t.contractorAddress}
-                    className="w-full p-1.5 text-xs border border-slate-300 rounded outline-none"
-                  />
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-1 text-xs">
-                  <h3 className="text-xs font-bold text-slate-600 uppercase mb-2">{t.clientSection}</h3>
-                  <p><span className="font-bold">Nom :</span> {state.clientName || '-'}</p>
-                  <p><span className="font-bold">N° TVA :</span> {state.vatNumber || '-'}</p>
-                  <p><span className="font-bold">Adresse chantier :</span> {state.siteAddress || '-'}</p>
-                  
-                  {activeStep === 5 && (
-                    <div className="mt-3 pt-2 border-t border-slate-200">
-                      <label className="block text-xs font-bold text-blue-900 mb-1">{t.deliveryDate}</label>
-                      <input
-                        type="date"
-                        value={state.deliveryDate}
-                        onChange={e => setState({ ...state, deliveryDate: e.target.value })}
-                        className="w-full p-1.5 text-xs border border-blue-300 bg-white rounded outline-none"
+            {/* TABLEAU DES PRESTATIONS */}
+            <h4>PRESTATIONS</h4>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9', textAlign: 'left', fontSize: '12px' }}>
+                  <th style={{ padding: '8px' }}>Description</th>
+                  <th style={{ padding: '8px', width: '80px' }}>Qté</th>
+                  <th style={{ padding: '8px', width: '120px' }}>Prix unitaire</th>
+                  <th style={{ padding: '8px', width: '120px' }}>Montant</th>
+                  <th style={{ padding: '8px', width: '40px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.lineItems.map((item) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px' }}>
+                      <input 
+                        type="text" 
+                        value={item.description} 
+                        onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} 
+                        style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
                       />
-                    </div>
-                  )}
-                </div>
-              </div>
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input 
+                        type="number" 
+                        value={item.quantity} 
+                        onChange={(e) => updateLineItem(item.id, 'quantity', Number(e.target.value))} 
+                        style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      />
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input 
+                        type="number" 
+                        value={item.unitPrice} 
+                        onChange={(e) => updateLineItem(item.id, 'unitPrice', Number(e.target.value))} 
+                        style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      />
+                    </td>
+                    <td style={{ padding: '8px', fontWeight: 'bold' }}>
+                      {(item.quantity * item.unitPrice).toFixed(2)} €
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <button onClick={() => removeLineItem(item.id)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-              {/* Tableau des Prestations */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 border-b border-slate-300 text-slate-700">
-                      <th className="p-2.5">{t.description}</th>
-                      <th className="p-2.5 w-20 text-center">{t.qty}</th>
-                      <th className="p-2.5 w-28 text-right">{t.unitPrice}</th>
-                      <th className="p-2.5 w-20 text-center">{t.vatRate}</th>
-                      <th className="p-2.5 w-28 text-right">{t.amount}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.lineItems.map(item => (
-                      <tr key={item.id} className="border-b border-slate-200">
-                        <td className="p-2.5 font-medium text-slate-800">{item.description}</td>
-                        <td className="p-2.5 text-center">
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={e => updateLineItem(item.id, 'quantity', Number(e.target.value))}
-                            className="w-14 p-1 text-center border border-slate-300 rounded outline-none"
-                          />
-                        </td>
-                        <td className="p-2.5 text-right">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={e => updateLineItem(item.id, 'unitPrice', Number(e.target.value))}
-                            className="w-24 p-1 text-right border border-slate-300 rounded outline-none"
-                          />
-                        </td>
-                        <td className="p-2.5 text-center font-bold">{item.vatRate}%</td>
-                        <td className="p-2.5 text-right font-bold">{(item.quantity * item.unitPrice).toFixed(2)} €</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <button onClick={addLineItem} style={{ padding: '6px 12px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+              + Ligne
+            </button>
 
-              {activeStep === 4 && (
-                <button
-                  onClick={addCustomLine}
-                  className="px-3 py-1.5 text-xs font-bold text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
-                >
-                  {t.addLine}
-                </button>
-              )}
-
-              {/* Sous-totaux */}
-              <div className="flex justify-end pt-4">
-                <div className="w-64 space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-600">{t.subtotalExcl}</span>
-                    <span className="font-bold">{subtotalExcl.toFixed(2)} €</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b text-blue-600">
-                    <span className="font-medium">{t.vatAmount}</span>
-                    <span className="font-bold">{totalVat.toFixed(2)} €</span>
-                  </div>
-                  <div className="flex justify-between py-2 text-sm font-extrabold text-slate-900 border-b-2 border-slate-900">
-                    <span>{t.totalIncl}</span>
-                    <span>{totalIncl.toFixed(2)} €</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mention Légale Obligatoire */}
-              <div className="p-3 bg-slate-100 rounded border border-slate-200 text-xs">
-                <p className="font-bold text-slate-700 mb-1">{t.legalMentionHeader}</p>
-                <p className="italic text-slate-600">{vatResult.legalNotice || '-'}</p>
-              </div>
-
-              {/* Boutons d'Action */}
-              <div className="flex justify-between items-center pt-6">
-                <button
-                  onClick={() => setActiveStep(3)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-200 rounded-lg hover:bg-slate-300"
-                >
-                  {t.backBtn}
-                </button>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-200 rounded-lg hover:bg-slate-300">
-                    {t.saveQuote}
-                  </button>
-                  <button className="px-4 py-2 text-xs font-bold text-white bg-slate-800 rounded-lg hover:bg-slate-900">
-                    🖨️ {t.printPdf}
-                  </button>
-                  {activeStep === 4 && (
-                    <button
-                      onClick={() => setActiveStep(5)}
-                      className="px-4 py-2 text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow"
-                    >
-                      {t.convertToInvoice}
-                    </button>
-                  )}
-                  {activeStep === 5 && (
-                    <button className="px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow">
-                      {t.sendPeppol}
-                    </button>
-                  )}
-                </div>
-              </div>
+            {/* TOTALS */}
+            <div style={{ marginTop: '20px', width: '300px', marginLeft: 'auto', textAlign: 'right', fontSize: '14px' }}>
+              <p style={{ margin: '4px 0' }}>Sous-total HTVA : <strong>{totalExcl.toFixed(2)} €</strong></p>
+              <p style={{ margin: '4px 0', color: '#2563eb' }}>Montant TVA ({vatResult.rates[0]?.rate}%) : <strong>{totalVat.toFixed(2)} €</strong></p>
+              <p style={{ margin: '8px 0 0 0', fontSize: '18px', fontWeight: 'bold' }}>Total TTC : {totalIncl.toFixed(2)} €</p>
             </div>
-          )}
 
-        </div>
+            {/* MENTION LÉGALE OBLIGATOIRE */}
+            {vatResult.legalNotice && (
+              <div style={{ marginTop: '24px', background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px', color: '#475569' }}>
+                <strong>Mention légale obligatoire :</strong><br />
+                <em>{vatResult.legalNotice}</em>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );
