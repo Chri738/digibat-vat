@@ -2,7 +2,7 @@ export interface VatInput {
   clientType: 'B2C' | 'B2B' | 'B2GOV';
   countryCode: string;
   buildingAge: 'UNDER_10' | 'OVER_EQUAL_10';
-  buildingUsage: '100_PRIVATE' | 'OVER_50_PRIVATE' | 'UNDER_50_PRIVATE' | '100_PRO';
+  buildingUsage: '100_PRIVATE' | 'MIXED' | '100_PRO';
   workType: 'renov_standard' | 'energy_insulation' | 'demolition_reconstruction' | 'maintenance' | 'new_construction';
   surfacePrivate?: number;
   surfacePro?: number;
@@ -41,7 +41,7 @@ export function calculateVAT(input: VatInput): VatResult {
     };
   }
 
-  // 2. Démolition & Reconstruction (Régime 6%)
+  // 2. Démolition & Reconstruction (6%)
   if (input.workType === 'demolition_reconstruction') {
     if (input.isUniqueOwnHome && input.surfaceMax200m2) {
       return {
@@ -54,38 +54,37 @@ export function calculateVAT(input: VatInput): VatResult {
         certificateRequired: true,
         explanation: isNL ? 'Sloop en heropbouw van enige eigen woning ≤ 200m².' : 'Démolition et reconstruction d\'un logement unique ≤ 200m².'
       };
-    } else {
-      return {
-        rate: 21,
-        regime: 'STANDARD_21',
-        label: isNL ? 'Standaardtarief 21%' : 'Taux normal 21%',
-        legalNotice: '',
-        certificateRequired: false,
-        explanation: isNL ? 'Sloop/heropbouw voldoet niet aan de voorwaarden voor 6%.' : 'La démolition/reconstruction ne remplit pas les conditions du taux réduit.'
-      };
     }
   }
 
-  // 3. Usage Mixte avec Répartition de Surface (Prorata m²)
-  if (input.buildingUsage === 'UNDER_50_PRIVATE' && input.surfacePrivate && input.surfacePro) {
-    const totalSurface = input.surfacePrivate + input.surfacePro;
-    const privateRatio = Math.round((input.surfacePrivate / totalSurface) * 100);
+  // 3. Usage Mixte avec Répartition de Surface (Prorata)
+  if (input.buildingUsage === 'MIXED') {
+    const surfPriv = input.surfacePrivate || 100;
+    const surfPro = input.surfacePro || 100;
+    const totalSurface = surfPriv + surfPro;
+    const privateRatio = Math.round((surfPriv / totalSurface) * 100);
+    const privateRate = input.buildingAge === 'OVER_EQUAL_10' ? 6 : 21;
+
     return {
-      rate: input.buildingAge === 'OVER_EQUAL_10' ? 6 : 21,
+      rate: privateRate,
       secondaryRate: 21,
       proRataPrivatePercent: privateRatio,
       regime: 'MIXED_PRORATA',
-      label: isNL ? `Gemengd gebruik (${privateRatio}% privé op 6%, ${100 - privateRatio}% pro op 21%)` : `Usage mixte (${privateRatio}% privé à 6%, ${100 - privateRatio}% pro à 21%)`,
+      label: isNL 
+        ? `Gemengd gebruik (${privateRatio}% privé aan ${privateRate}%, ${100 - privateRatio}% pro aan 21%)` 
+        : `Usage mixte (${privateRatio}% privé à ${privateRate}%, ${100 - privateRatio}% pro à 21%)`,
       legalNotice: isNL
-        ? 'Opsplitsing volgens privé/professioneel gebruik op basis van oppervlakte.'
-        : 'Ventilation de la TVA au prorata des surfaces privées et professionnelles conformément à la réglementation fiscale.',
+        ? `Opsplitsing volgens privé/professioneel gebruik (${privateRatio}% op ${privateRate}% BTW / ${100 - privateRatio}% op 21% BTW).`
+        : `Ventilation de la TVA au prorata des surfaces (${privateRatio}% à ${privateRate}% TVA / ${100 - privateRatio}% à 21% TVA).`,
       certificateRequired: input.buildingAge === 'OVER_EQUAL_10',
-      explanation: isNL ? `Privégedeelte (${privateRatio}%) geniet van verlaagd tarief indien ≥ 10 jaar.` : `La partie privée (${privateRatio}%) bénéficie du taux réduit si le bâtiment a ≥ 10 ans.`
+      explanation: isNL 
+        ? `Oppervlakteberekening: ${surfPriv}m² privé (${privateRatio}%) en ${surfPro}m² pro (${100 - privateRatio}%).` 
+        : `Répartition surfacique : ${surfPriv}m² privé (${privateRatio}%) et ${surfPro}m² pro (${100 - privateRatio}%).`
     };
   }
 
-  // 4. Bâtiment ≥ 10 ans (Usage 100% privé ou > 50% privé)
-  if (input.buildingAge === 'OVER_EQUAL_10' && (input.buildingUsage === '100_PRIVATE' || input.buildingUsage === 'OVER_50_PRIVATE')) {
+  // 4. Bâtiment ≥ 10 ans (Usage privé)
+  if (input.buildingAge === 'OVER_EQUAL_10' && input.buildingUsage === '100_PRIVATE') {
     return {
       rate: 6,
       regime: 'RENOVATION_6',
@@ -94,17 +93,17 @@ export function calculateVAT(input: VatInput): VatResult {
         ? 'Verlaagd BTW-tarief van 6% op grond van rubriek XXXVIII van tabel A van de bijlage bij het koninklijk besluit nr. 20.'
         : 'Taux de TVA réduit de 6% en vertu de la rubrique XXXVIII du tableau A de l\'annexe à l\'arrêté royal n° 20.',
       certificateRequired: true,
-      explanation: isNL ? 'Privéwoning van meer dan 10 jaar oud.' : 'Bâtiment d\'habitation de plus de 10 ans à usage principal privé.'
+      explanation: isNL ? 'Privéwoning van meer dan 10 jaar oud.' : 'Bâtiment d\'habitation de plus de 10 ans à usage privé.'
     };
   }
 
-  // 5. Cas Général (Taux normal 21%)
+  // 5. Cas Général (21%)
   return {
     rate: 21,
     regime: 'STANDARD_21',
     label: isNL ? 'Standaardtarief 21%' : 'Taux normal 21%',
     legalNotice: '',
     certificateRequired: false,
-    explanation: isNL ? 'Standaard tarief van toepassing (< 10 jaar of professioneel gebruik).' : 'Taux normal applicable (bâtiment < 10 ans ou usage professionnel).'
+    explanation: isNL ? 'Standaard tarief van toepassing.' : 'Taux normal 21% applicable.'
   };
 }
