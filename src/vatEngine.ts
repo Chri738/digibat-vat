@@ -1,109 +1,196 @@
+// Types & Interfaces pour le Moteur Fiscal TVA (DigiBât / DigiBouw)
+
+export type StatutTVA = "B2B" | "B2C";
+export type AgeBatiment = "<10" | ">=10";
+export type UsageBatiment = "100_PRIV" | "GT50_PRIV" | "EXCL_PRO" | "MIXED";
+export type ViesStatus = "UNCHECKED" | "PENDING" | "VALIDATED" | "INVALID";
+
+// Catalogue exhaustif des 11 travaux
+export type WorkType =
+  | "HEAT_PUMP"               // 1. Pompe à chaleur (AR 29/03/2022)
+  | "STANDARD_RENOVATION"     // 2. Rénovation standard
+  | "HEAVY_OUTDOOR"          // 3. Aménagements extérieurs lourds
+  | "SOLAR_INSULATION"        // 4. Panneaux solaires & Isolation
+  | "SOLAR_GENERAL"           // 5. Panneaux solaires & autres travaux généraux
+  | "INDUSTRIAL_CLEANING"     // 6. Nettoyage industriel de chantier
+  | "TREE_FELLING"            // 7. Abattage des arbres dangereux
+  | "PAINTING_NEW"            // 8. Peinture bâtiment neuf
+  | "PAINTING_OLD"            // 9. Peinture bâtiment ancien
+  | "ROUTINE_HOUSE_MAINT"     // 10. Nettoyage courant, lavage de vitres...
+  | "ROUTINE_GARDENING";      // 11. Entretien courant & Jardinage ordinaire
+
 export interface VatInput {
-  clientType: 'B2C' | 'B2B' | 'B2GOV';
-  countryCode: string;
-  buildingAge: 'UNDER_10' | 'OVER_EQUAL_10';
-  buildingUsage: '100_PRIVATE' | 'MIXED' | '100_PRO';
-  workType: 'renov_standard' | 'energy_insulation' | 'demolition_reconstruction' | 'maintenance' | 'new_construction';
-  surfacePrivate?: number;
-  surfacePro?: number;
-  isUniqueOwnHome?: boolean;
-  surfaceMax200m2?: boolean;
-  language: 'FR' | 'NL';
+  statutTVA: StatutTVA;
+  viesStatus: ViesStatus;
+  ageBatiment: AgeBatiment;
+  usageBatiment: UsageBatiment;
+  
+  // Données de surface (Usage Mixte)
+  surfacePrivee?: number;        // en m²
+  surfacePro?: number;           // en m²
+  superficieParcelle?: number;   // en m²
+  
+  // Travaux sélectionnés
+  workTypes: WorkType[];
+}
+
+export interface LineRateResult {
+  workType: WorkType;
+  rate: number;                  // Taux de TVA calculé (0, 6 ou 21)
+  isVentilated?: boolean;        // Vrai si ventilation mixte (21%/6%) requise
+  ratePro?: number;              // Taux part pro si ventilé (21%)
+  ratePrivate?: number;          // Taux part privée si ventilé (6%)
+  proPercentage?: number;        // Ratio surface pro (%)
+  privatePercentage?: number;    // Ratio surface privée (%)
 }
 
 export interface VatResult {
-  rate: number;
-  secondaryRate?: number;
-  proRataPrivatePercent?: number;
-  regime: string;
-  label: string;
-  legalNotice: string;
-  certificateRequired: boolean;
-  explanation: string;
+  regimeKey: "B2B_AUTOLIQUIDATION" | "B2C_LESS_10" | "B2C_GE_10_STANDARD" | "B2C_GE_10_MIXED";
+  lineResults: Record<WorkType, LineRateResult>;
+  legalMentionKey: "AUTOLIQUIDATION_ART20" | "RESPONSIBILITY_CLIENT_GE10" | "STANDARD_NONE";
+  isMixedUsageApplied: boolean;
+  mixedUsageVentilated: boolean; // Vrai si Pro > Privé sur parcelle >= 200m²
 }
 
+/**
+ * Moteur Fiscal Principal : Calcul des taux de TVA et déclenchement des mentions légales.
+ */
 export function calculateVAT(input: VatInput): VatResult {
-  const isNL = input.language === 'NL';
+  const {
+    statutTVA,
+    viesStatus,
+    ageBatiment,
+    usageBatiment,
+    surfacePrivee = 0,
+    surfacePro = 0,
+    superficieParcelle = 0,
+    workTypes,
+  } = input;
 
-  // 1. Règle B2B Belgique - Autoliquidation (Art. 20 AR n°1)
-  if (input.clientType === 'B2B' && input.countryCode === 'BE') {
+  const lineResults: Record<string, LineRateResult> = {};
+
+  // ----------------------------------------------------------------------
+  // 1. CAS B2B : Autoliquidation / Medecontractant (Art. 20, KB nr. 1)
+  // ----------------------------------------------------------------------
+  if (statutTVA === "B2B" && viesStatus === "VALIDATED") {
+    workTypes.forEach((wt) => {
+      lineResults[wt] = {
+        workType: wt,
+        rate: 0, // Autoliquidation 0%
+      };
+    });
+
     return {
-      rate: 0,
-      regime: 'REVERSE_CHARGE',
-      label: isNL ? 'BTW verlegging (Art. 20 KB nr. 1)' : 'Autoliquidation (Art. 20 Arrêté Royal n°1)',
-      legalNotice: isNL
-        ? 'Verlegging van heffing. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na de ontvangst van de factuur, wordt de klant geacht te erkennen dat de werken worden uitgevoerd aan een woning waarvan de eerste ingebruikneming dateert van minstens 10 jaar.'
-        : 'Autoliquidation - En l\'absence de contestation par écrit dans un délai d\'un mois à compter de la réception de la facture, le client est présumé reconnaître que les travaux sont effectués à un bâtiment d\'habitation dont la première occupation date d\'au moins 10 ans.',
-      certificateRequired: false,
-      explanation: isNL
-        ? 'Werken in onroerende staat uitgevoerd voor een BTW-plichtige klant in België.'
-        : 'Travaux immobiliers effectués pour un assujetti à la TVA établi en Belgique.'
+      regimeKey: "B2B_AUTOLIQUIDATION",
+      lineResults: lineResults as Record<WorkType, LineRateResult>,
+      legalMentionKey: "AUTOLIQUIDATION_ART20",
+      isMixedUsageApplied: false,
+      mixedUsageVentilated: false,
     };
   }
 
-  // 2. Démolition & Reconstruction (6%)
-  if (input.workType === 'demolition_reconstruction') {
-    if (input.isUniqueOwnHome && input.surfaceMax200m2) {
-      return {
-        rate: 6,
-        regime: 'DEMOLITION_RECONSTRUCTION_6',
-        label: isNL ? 'Verlaagd tarief 6% (Sloop & Heropbouw)' : 'Taux réduit 6% (Démolition & Reconstruction)',
-        legalNotice: isNL
-          ? 'Verlaagd BTW-tarief van 6% inzake sloop en heropbouw van een eigen en enige woning (oppervlakte ≤ 200m²).'
-          : 'Taux de TVA réduit de 6% applicable aux travaux de démolition et reconstruction d\'un logement propre et unique (surface ≤ 200m²).',
-        certificateRequired: true,
-        explanation: isNL ? 'Sloop en heropbouw van enige eigen woning ≤ 200m².' : 'Démolition et reconstruction d\'un logement unique ≤ 200m².'
-      };
+  // ----------------------------------------------------------------------
+  // 2. CAS B2C : Application de la grille tarifaire B2C
+  // ----------------------------------------------------------------------
+  const isGE10 = ageBatiment === ">=10";
+  const isMixed = usageBatiment === "MIXED" && superficieParcelle >= 200;
+
+  let isMixedVentilated = false;
+  let proShare = 0;
+  let privateShare = 0;
+
+  // Analyse du cas Usage Mixte (>= 10 ans et parcelle >= 200 m²)
+  if (isGE10 && isMixed) {
+    const totalSurface = surfacePrivee + surfacePro;
+    if (totalSurface > 0) {
+      proShare = Math.round((surfacePro / totalSurface) * 100);
+      privateShare = 100 - proShare;
+    }
+    // Condition de ventilation : Surface Professionnelle > Surface Privée
+    if (surfacePro > surfacePrivee) {
+      isMixedVentilated = true;
     }
   }
 
-  // 3. Usage Mixte avec Répartition de Surface (Prorata)
-  if (input.buildingUsage === 'MIXED') {
-    const surfPriv = input.surfacePrivate || 100;
-    const surfPro = input.surfacePro || 100;
-    const totalSurface = surfPriv + surfPro;
-    const privateRatio = Math.round((surfPriv / totalSurface) * 100);
-    const privateRate = input.buildingAge === 'OVER_EQUAL_10' ? 6 : 21;
+  workTypes.forEach((wt) => {
+    let calculatedRate = 21; // Taux par défaut
 
-    return {
-      rate: privateRate,
-      secondaryRate: 21,
-      proRataPrivatePercent: privateRatio,
-      regime: 'MIXED_PRORATA',
-      label: isNL 
-        ? `Gemengd gebruik (${privateRatio}% privé aan ${privateRate}%, ${100 - privateRatio}% pro aan 21%)` 
-        : `Usage mixte (${privateRatio}% privé à ${privateRate}%, ${100 - privateRatio}% pro à 21%)`,
-      legalNotice: isNL
-        ? `Opsplitsing volgens privé/professioneel gebruik (${privateRatio}% op ${privateRate}% BTW / ${100 - privateRatio}% op 21% BTW).`
-        : `Ventilation de la TVA au prorata des surfaces (${privateRatio}% à ${privateRate}% TVA / ${100 - privateRatio}% à 21% TVA).`,
-      certificateRequired: input.buildingAge === 'OVER_EQUAL_10',
-      explanation: isNL 
-        ? `Oppervlakteberekening: ${surfPriv}m² privé (${privateRatio}%) en ${surfPro}m² pro (${100 - privateRatio}%).` 
-        : `Répartition surfacique : ${surfPriv}m² privé (${privateRatio}%) et ${surfPro}m² pro (${100 - privateRatio}%).`
-    };
-  }
+    if (!isGE10) {
+      // --- BÂTIMENT < 10 ANS ---
+      switch (wt) {
+        case "HEAT_PUMP":
+        case "SOLAR_INSULATION":
+        case "INDUSTRIAL_CLEANING":
+          calculatedRate = 6;
+          break;
+        case "STANDARD_RENOVATION":
+        case "HEAVY_OUTDOOR":
+        case "SOLAR_GENERAL":
+        case "TREE_FELLING":
+        case "PAINTING_NEW":
+        case "PAINTING_OLD":
+        case "ROUTINE_HOUSE_MAINT":
+        case "ROUTINE_GARDENING":
+        default:
+          calculatedRate = 21;
+          break;
+      }
 
-  // 4. Bâtiment ≥ 10 ans (Usage privé)
-  if (input.buildingAge === 'OVER_EQUAL_10' && input.buildingUsage === '100_PRIVATE') {
-    return {
-      rate: 6,
-      regime: 'RENOVATION_6',
-      label: isNL ? 'Verlaagd tarief 6% (Renovatie ≥ 10 jaar)' : 'Taux réduit 6% (Rénovation ≥ 10 ans)',
-      legalNotice: isNL
-        ? 'Verlaagd BTW-tarief van 6% op grond van rubriek XXXVIII van tabel A van de bijlage bij het koninklijk besluit nr. 20.'
-        : 'Taux de TVA réduit de 6% en vertu de la rubrique XXXVIII du tableau A de l\'annexe à l\'arrêté royal n° 20.',
-      certificateRequired: true,
-      explanation: isNL ? 'Privéwoning van meer dan 10 jaar oud.' : 'Bâtiment d\'habitation de plus de 10 ans à usage privé.'
-    };
-  }
+      lineResults[wt] = { workType: wt, rate: calculatedRate };
 
-  // 5. Cas Général (21%)
+    } else {
+      // --- BÂTIMENT >= 10 ANS ---
+      if (isMixedVentilated) {
+        // Cas Mixte Pro > Privé : Ventilation 21% Pro / 6% Privé
+        lineResults[wt] = {
+          workType: wt,
+          rate: 6, // Taux de référence privé
+          isVentilated: true,
+          ratePro: 21,
+          ratePrivate: 6,
+          proPercentage: proShare,
+          privatePercentage: privateShare,
+        };
+      } else {
+        // Cas Standard >= 10 ans OU (Mixte Pro <= Privé -> 6% total)
+        switch (wt) {
+          case "HEAT_PUMP":
+          case "STANDARD_RENOVATION":
+          case "HEAVY_OUTDOOR":
+          case "SOLAR_INSULATION":
+          case "INDUSTRIAL_CLEANING":
+          case "TREE_FELLING":
+            calculatedRate = 6;
+            break;
+          case "SOLAR_GENERAL":
+          case "PAINTING_NEW":
+          case "PAINTING_OLD":
+          case "ROUTINE_HOUSE_MAINT":
+          case "ROUTINE_GARDENING":
+          default:
+            calculatedRate = 21;
+            break;
+        }
+
+        lineResults[wt] = { workType: wt, rate: calculatedRate };
+      }
+    }
+  });
+
+  // Détermination du régime final et de la mention légale obligatoirement injectée
+  const regimeKey = !isGE10
+    ? "B2C_LESS_10"
+    : isMixed
+    ? "B2C_GE_10_MIXED"
+    : "B2C_GE_10_STANDARD";
+
+  const legalMentionKey = isGE10 ? "RESPONSIBILITY_CLIENT_GE10" : "STANDARD_NONE";
+
   return {
-    rate: 21,
-    regime: 'STANDARD_21',
-    label: isNL ? 'Standaardtarief 21%' : 'Taux normal 21%',
-    legalNotice: '',
-    certificateRequired: false,
-    explanation: isNL ? 'Standaard tarief van toepassing.' : 'Taux normal 21% applicable.'
+    regimeKey,
+    lineResults: lineResults as Record<WorkType, LineRateResult>,
+    legalMentionKey,
+    isMixedUsageApplied: isMixed,
+    mixedUsageVentilated: isMixedVentilated,
   };
 }
