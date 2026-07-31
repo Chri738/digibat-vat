@@ -10,7 +10,7 @@ import {
   ViesStatus,
 } from './vatEngine';
 import { TRANSLATIONS, Language } from './translations';
-import { LEGAL_MENTIONS } from './constants/legalMentions';
+import { LEGAL_MENTIONS } from './types/constants/legalMentions';
 
 // Liste des 27 pays membres de l'UE
 const EU_COUNTRIES = [
