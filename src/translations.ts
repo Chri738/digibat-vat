@@ -1,188 +1,231 @@
-import { Country, WorkCategory } from './types';
+export type Language = "FR" | "NL";
 
-export const EU_COUNTRIES: Country[] = [
-  { code: 'BE', nameFR: 'Belgique', nameNL: 'België' },
-  { code: 'FR', nameFR: 'France', nameNL: 'Frankrijk' },
-  { code: 'NL', nameFR: 'Pays-Bas', nameNL: 'Nederland' },
-  { code: 'DE', nameFR: 'Allemagne', nameNL: 'Duitsland' },
-  { code: 'AT', nameFR: 'Autriche', nameNL: 'Oostenrijk' },
-  { code: 'BG', nameFR: 'Bulgarie', nameNL: 'Bulgarije' },
-  { code: 'CY', nameFR: 'Chypre', nameNL: 'Cyprus' },
-  { code: 'HR', nameFR: 'Croatie', nameNL: 'Kroatië' },
-  { code: 'DK', nameFR: 'Danemark', nameNL: 'Denemarken' },
-  { code: 'ES', nameFR: 'Espagne', nameNL: 'Spanje' },
-  { code: 'EE', nameFR: 'Estonie', nameNL: 'Estland' },
-  { code: 'FI', nameFR: 'Finlande', nameNL: 'Finland' },
-  { code: 'GR', nameFR: 'Grèce', nameNL: 'Griekenland' },
-  { code: 'HU', nameFR: 'Hongrie', nameNL: 'Hongarije' },
-  { code: 'IE', nameFR: 'Irlande', nameNL: 'Ierland' },
-  { code: 'IT', nameFR: 'Italie', nameNL: 'Italië' },
-  { code: 'LV', nameFR: 'Lettonie', nameNL: 'Letland' },
-  { code: 'LT', nameFR: 'Lituanie', nameNL: 'Litouwen' },
-  { code: 'LU', nameFR: 'Luxembourg', nameNL: 'Luxemburg' },
-  { code: 'MT', nameFR: 'Malte', nameNL: 'Malta' },
-  { code: 'PL', nameFR: 'Pologne', nameNL: 'Polen' },
-  { code: 'PT', nameFR: 'Portugal', nameNL: 'Portugal' },
-  { code: 'RO', nameFR: 'Roumanie', nameNL: 'Roemenië' },
-  { code: 'SK', nameFR: 'Slovaquie', nameNL: 'Slowakije' },
-  { code: 'SI', nameFR: 'Slovénie', nameNL: 'Slovenië' },
-  { code: 'SE', nameFR: 'Suède', nameNL: 'Zweden' },
-  { code: 'CZ', nameFR: 'République Tchèque', nameNL: 'Tsjechië' }
-];
+export interface TranslationDictionary {
+  // Navigation & Étapes
+  title: string;
+  subtitle: string;
+  step1Title: string;
+  step2Title: string;
+  step3Title: string;
+  
+  // Étape 1 : Profil Client
+  clientProfile: string;
+  selectCountry: string;
+  vatStatus: string;
+  b2bLabel: string;
+  b2cLabel: string;
+  vatNumber: string;
+  checkVies: string;
+  viesValidated: string;
+  viesInvalid: string;
+  viesPending: string;
+  step2LockedMsg: string;
+  
+  // Étape 2 : Bien Immobilier & Travaux
+  propertyAndWorks: string;
+  buildingAge: string;
+  under10Years: string;
+  over10Years: string;
+  buildingUsage: string;
+  usage100Priv: string;
+  usageGt50Priv: string;
+  usageExclPro: string;
+  usageMixed: string;
+  
+  // Champs dynamiques Usage Mixte
+  privateSurface: string;
+  proSurface: string;
+  parcelSurface: string;
+  parcelWarning: string;
+  
+  // Catalogue & Chantier
+  worksCatalog: string;
+  outdoorWorks: string;
+  outdoorNotApplicable: string;
+  outdoorRoutine: string;
+  outdoorHeavy: string;
+  siteAddress: string;
+  
+  // Étape 3 : Verdict Fiscal & Documents
+  vatRegime: string;
+  quoteTitle: string;
+  invoiceTitle: string;
+  
+  // Tableaux & Champs Documents
+  clientAndSite: string;
+  clientPhone: string;
+  completionDate: string;
+  description: string;
+  quantity: string;
+  unitPrice: string;
+  amount: string;
+  vatRate: string;
+  subtotalExclVat: string;
+  vatAmount: string;
+  totalInclVat: string;
+  addLine: string;
+  
+  // Actions
+  saveQuote: string;
+  saveInvoice: string;
+  printPdf: string;
+  convertToInvoice: string;
+  sendPeppol: string;
+  
+  // Mention Légale Header
+  legalMentionTitle: string;
+}
 
-export const WORK_CATEGORIES: WorkCategory[] = [
-  { id: 'heat_pump', labelFR: 'Pompe à chaleur (AR 29/03/2022)', labelNL: 'Warmtepomp (KB 29/03/2022)' },
-  { id: 'standard_reno', labelFR: 'Rénovation standard', labelNL: 'Standaardrenovatie' },
-  { id: 'heavy_exterior', labelFR: 'Aménagements extérieurs lourds (Terrasse, pavage, parking...)', labelNL: 'Aanleg & grote buitenwerken (Terras, bestrating, parking...)' },
-  { id: 'solar_insulation', labelFR: 'Panneaux solaires & Isolation', labelNL: 'Zonnepanelen & Isolatie' },
-  { id: 'solar_general', labelFR: 'Panneaux solaires & autres travaux généraux (chauffage)', labelNL: 'Zonnepanelen & andere algemene werken (verwarming)' },
-  { id: 'industrial_cleaning', labelFR: 'Nettoyage industriel de chantier', labelNL: 'Industriële opleveringsschoonmaak' },
-  { id: 'tree_felling', labelFR: 'Abattage des arbres dangereux', labelNL: 'Vellen van gevaarlijke bomen' },
-  { id: 'paint_new', labelFR: 'Peinture sur un bâtiment neuf', labelNL: 'Schilderen van een nieuwbouw' },
-  { id: 'paint_old', labelFR: 'Peinture sur un bâtiment ancien', labelNL: 'Schilderen van een bestaand gebouw' },
-  { id: 'routine_house_cleaning', labelFR: 'Nettoyage courant, lavage de vitres, ramassage d\'herbe, entretien courant de la maison', labelNL: 'Lopend onderhoud, glazenwassen, gras opruimen, gewoon huisonderhoud' },
-  { id: 'routine_garden', labelFR: 'Entretien et nettoyage courant & Jardinage ordinaire (Tonte, taille, plantes...)', labelNL: 'Lopend onderhoud & Gewoon tuinonderhoud (Maaien, snoeien, planten...)' }
-];
-
-export const TRANSLATIONS = {
+export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
   FR: {
-    appTitle: "DIGIBÂT VAT / DIGIBOUW BTW",
-    appSubTitle: "Détermination TVA « Travaux immobiliers » — Belgique 2025-2026",
-    step1: "1. Profil Client",
-    step2: "2. Bien & Travaux",
-    step3: "3. Moteur Fiscal",
-    screenQuote: "Écran Devis",
-    screenInvoice: "Écran Facture",
+    // Navigation & Étapes
+    title: "Détermination TVA « Travaux immobiliers »",
+    subtitle: "Conforme réformes 2025-2026",
+    step1Title: "Étape 1 : Profil Client",
+    step2Title: "Étape 2 : Bien immobilier & Nature des travaux",
+    step3Title: "Étape 3 : Régime TVA / Cocontractant",
     
-    // Étape 1
-    step1Title: "Étape 1 : Profil du Client",
-    clientCountry: "Pays du client",
-    clientStatus: "Statut fiscal du client",
-    b2c: "Particulier (B2C)",
-    b2b: "Assujetti (B2B)",
-    clientName: "Nom ou Raison Sociale",
-    vatNumber: "N° de TVA Intracommunautaire",
-    viesBtn: "VIES Controleren",
-    viesSuccess: "✓ TVA VIES Validée (OK)",
-    viesError: "❌ Numéro TVA invalide ou non reconnu",
-    nextStep: "Étape suivante →",
+    // Étape 1 : Profil Client
+    clientProfile: "Profil Client",
+    selectCountry: "Sélecteur de Pays (UE)",
+    vatStatus: "Statut TVA",
+    b2bLabel: "B2B (Assujetti)",
+    b2cLabel: "B2C (Particulier)",
+    vatNumber: "Numéro de TVA",
+    checkVies: "VIES Controleren",
+    viesValidated: "VIES Validée (OK)",
+    viesInvalid: "Numéro TVA non valide dans VIES",
+    viesPending: "Vérification VIES en cours...",
+    step2LockedMsg: "Étape 2 verrouillée : La validation VIES est requise pour le statut B2B.",
     
-    // Étape 2
-    step2Title: "Étape 2 : Bien Immobilier & Nature des Travaux",
+    // Étape 2 : Bien Immobilier & Travaux
+    propertyAndWorks: "Bien immobilier & Nature des travaux",
     buildingAge: "Âge du bâtiment",
-    under10: "< 10 ans",
-    over10: "≥ 10 ans",
+    under10Years: "< 10 ans",
+    over10Years: "≥ 10 ans",
     buildingUsage: "Usage du bâtiment",
-    usage100Private: "100% Privé",
-    usageOver50Private: "> 50% Privé",
-    usageExclusivePro: "Exclusif Pro",
+    usage100Priv: "100% Privé",
+    usageGt50Priv: "> 50% Privé",
+    usageExclPro: "Exclusif Pro",
     usageMixed: "Mixte (privé-professionnel)",
-    surfacePrivateLabel: "Surface privée (m²)",
-    surfaceProLabel: "Surface professionnelle (m²)",
-    mixedWarning: "Condition usage mixte : La surface totale construite (Privée + Pro) doit être d'au moins 200 m².",
-    natureWorks: "Nature des travaux (Sélectionnez un ou plusieurs travaux)",
+    
+    // Champs dynamiques Usage Mixte
+    privateSurface: "Surface privée (m²)",
+    proSurface: "Surface professionnelle (m²)",
+    parcelSurface: "Superficie de la parcelle (m²)",
+    parcelWarning: "Attention : La superficie de la parcelle doit être ≥ 200 m² pour appliquer le régime d'usage mixte.",
+    
+    // Catalogue & Chantier
+    worksCatalog: "Catalogue des travaux",
+    outdoorWorks: "Aménagements extérieurs",
+    outdoorNotApplicable: "Non applicable",
+    outdoorRoutine: "Entretien courant",
+    outdoorHeavy: "Aménagement & Gros travaux",
     siteAddress: "Adresse du chantier",
-    siteAddressPlaceholder: "Rue, N°, Code Postal, Ville...",
-    backBtn: "← Retour",
-    calculateVat: "Calculer le Régime TVA →",
-
-    // Étape 3
-    step3Title: "Étape 3 : Résultat / Régime TVA Déterminé",
-    verdictSummary: "Récapitulatif des taux calculés :",
-    generateQuote: "Générer le Devis →",
-
-    // Devis & Facture
-    quoteTitle: "DEVIS / OFFERTE",
-    invoiceTitle: "FACTURE / FACTUUR",
-    contractorSection: "DIENSTVERLENER / ONDERNEMER",
-    clientSection: "KLANT & WERF",
-    contractorName: "Nom entreprise...",
-    contractorVat: "N° TVA (BE 0...)",
-    contractorAddress: "Adresse entreprise...",
-    deliveryDate: "Date de livraison des travaux",
+    
+    // Étape 3 : Verdict Fiscal & Documents
+    vatRegime: "Btw-regeling / Medecontractant",
+    quoteTitle: "DEVIS DE TRAVAUX",
+    invoiceTitle: "FACTURE DE TRAVAUX",
+    
+    // Tableaux & Champs Documents
+    clientAndSite: "Client & Chantier",
+    clientPhone: "Tél. client",
+    completionDate: "Date de livraison des travaux",
     description: "Description",
-    qty: "Qté",
-    unitPrice: "Prix unitaire (€)",
-    amount: "Montant HT (€)",
+    quantity: "Quantité",
+    unitPrice: "Prix unitaire",
+    amount: "Montant",
     vatRate: "TVA",
-    subtotalExcl: "Subtotaal EXCL. BTW :",
-    vatAmount: "Montant TVA :",
-    totalIncl: "TOTAAL TTC :",
-    legalMentionHeader: "Verplichte wettelijke vermelding op het document :",
-    addLine: "+ Lijn toevoegen",
+    subtotalExclVat: "Subtotaal EXCL. BTW",
+    vatAmount: "Montant TVA",
+    totalInclVat: "TOTAL TTC / Totaal incl. BTW",
+    addLine: "+ Ajouter une ligne",
+    
+    // Actions
     saveQuote: "Offerte opslaan",
+    saveInvoice: "Factuur opslaan",
     printPdf: "Afdrukken / PDF",
-    convertToInvoice: "Omzetten naar Factuur →",
-    sendPeppol: "Verzenden via Peppol →"
+    convertToInvoice: "Omzetten naar Factuur",
+    sendPeppol: "Verzenden via Peppol",
+    
+    // Mention Légale Header
+    legalMentionTitle: "Mention légale à insérer sur la facture",
   },
+  
   NL: {
-    appTitle: "DIGIBÂT VAT / DIGIBOUW BTW",
-    appSubTitle: "Btw-bepaling « Werken in onroerende staat » — België 2025-2026",
-    step1: "1. Klantprofiel",
-    step2: "2. Onroerend goed & Werken",
-    step3: "3. Btw-regeling",
-    screenQuote: "Offertescherm",
-    screenInvoice: "Factuurscherm",
+    // Navigation & Étapes
+    title: "Btw-bepaling « Werken in onroerende staat »",
+    subtitle: "Conform de hervormingen 2025-2026",
+    step1Title: "Stap 1: Klantprofiel",
+    step2Title: "Stap 2: Onroerend goed & Aard van de werken",
+    step3Title: "Stap 3: Btw-regeling / Medecontractant",
     
-    // Étape 1
-    step1Title: "Étape 1 : Klantprofiel",
-    clientCountry: "Land van de klant",
-    clientStatus: "Fiscale status van de klant",
-    b2c: "Particulier (B2C)",
-    b2b: "Btw-plichtige (B2B)",
-    clientName: "Naam of Bedrijfsnaam",
-    vatNumber: "BTW-nummer",
-    viesBtn: "VIES Controleren",
-    viesSuccess: "✓ Btw-nummer via VIES gevalideerd (Oké)",
-    viesError: "❌ Ongeldig of niet-herkend btw-nummer",
-    nextStep: "Volgende stap →",
+    // Étape 1 : Profil Client
+    clientProfile: "Klantprofiel",
+    selectCountry: "Landenselectie (EU)",
+    vatStatus: "Btw-status",
+    b2bLabel: "B2B (Btw-plichtige)",
+    b2cLabel: "B2C (Particulier)",
+    vatNumber: "Btw-nummer",
+    checkVies: "VIES Controleren",
+    viesValidated: "Btw-nummer via VIES gevalideerd (Oké)",
+    viesInvalid: "Ongeldig Btw-nummer in VIES",
+    viesPending: "VIES-controle wordt uitgevoerd...",
+    step2LockedMsg: "Stap 2 vergrendeld: VIES-validatie is vereist voor B2B-status.",
     
-    // Étape 2
-    step2Title: "Étape 2 : Onroerend goed & Aard van de werken",
+    // Étape 2 : Bien Immobilier & Travaux
+    propertyAndWorks: "Onroerend goed & Aard van de werken",
     buildingAge: "Ouderdom van het gebouw",
-    under10: "< 10 jaar",
-    over10: "≥ 10 jaar",
+    under10Years: "< 10 jaar",
+    over10Years: "≥ 10 jaar",
     buildingUsage: "Gebruik van het gebouw",
-    usage100Private: "100% Privé",
-    usageOver50Private: "> 50% Privé",
-    usageExclusivePro: "Exclusief Pro",
-    usageMixed: "Gemengd (privé-beroepsmatig)",
-    surfacePrivateLabel: "Privégedeelte (m²)",
-    surfaceProLabel: "Zakelijk vloeroppervlak (m²)",
-    mixedWarning: "Voorwaarde gemengd gebruik: De totale bebouwde oppervlakte (Privé + Pro) moet minstens 200 m² bedragen.",
-    natureWorks: "Aard van de werken (Selecteer één of meerdere werken)",
+    usage100Priv: "100% Privéwoning",
+    usageGt50Priv: "> 50% Privéwoning",
+    usageExclPro: "Exclusief Beroepsgebruik",
+    usageMixed: "Gemengd gebruik (privé-zakelijk)",
+    
+    // Champs dynamiques Usage Mixte
+    privateSurface: "Privégedeelte (m²)",
+    proSurface: "Zakelijk vloeroppervlak (m²)",
+    parcelSurface: "Perceeloppervlakte (m²)",
+    parcelWarning: "Opgelet: De perceeloppervlakte moet ≥ 200 m² zijn om de regeling voor gemengd gebruik toe te passen.",
+    
+    // Catalogue & Chantier
+    worksCatalog: "Catalogus van de werken",
+    outdoorWorks: "Buitenwerken / Groenvoorzieningen",
+    outdoorNotApplicable: "Niet van toepassing",
+    outdoorRoutine: "Lopend onderhoud",
+    outdoorHeavy: "Aanleg & Grote werken",
     siteAddress: "Adres van de werf / bouwwerf",
-    siteAddressPlaceholder: "Straat, Nr, Postcode, Stad...",
-    backBtn: "← Terug",
-    calculateVat: "Btw-regeling berekenen →",
-
-    // Étape 3
-    step3Title: "Étape 3 : Resultaat / Btw-regeling",
-    verdictSummary: "Samenvatting van berekende tarieven:",
-    generateQuote: "Offerte genereren →",
-
-    // Devis & Facture
-    quoteTitle: "OFFERTE / DEVIS",
-    invoiceTitle: "FACTUUR / FACTURE",
-    contractorSection: "DIENSTVERLENER / ONDERNEMER",
-    clientSection: "KLANT & WERF",
-    contractorName: "Bedrijfsnaam...",
-    contractorVat: "BTW-nr (BE 0...)",
-    contractorAddress: "Bedrijfsadres...",
-    deliveryDate: "Opleveringsdatum van de werken",
+    
+    // Étape 3 : Verdict Fiscal & Documents
+    vatRegime: "Btw-regeling / Medecontractant",
+    quoteTitle: "OFFERTE WERKEN",
+    invoiceTitle: "FACTUUR WERKEN",
+    
+    // Tableaux & Champs Documents
+    clientAndSite: "Klant & Werf",
+    clientPhone: "Tel. klant",
+    completionDate: "Opleveringsdatum van de werken",
     description: "Omschrijving",
-    qty: "Aantal",
-    unitPrice: "Eenheidsprijs (€)",
-    amount: "Bedrag EXCL. BTW (€)",
+    quantity: "Aantal",
+    unitPrice: "Eenheidsprijs",
+    amount: "Bedrag",
     vatRate: "Btw",
-    subtotalExcl: "Subtotaal EXCL. BTW :",
-    vatAmount: "Btw-bedrag :",
-    totalIncl: "TOTAAL INCL. BTW :",
-    legalMentionHeader: "Verplichte wettelijke vermelding op het document :",
+    subtotalExclVat: "Subtotaal EXCL. BTW",
+    vatAmount: "Btw-bedrag",
+    totalInclVat: "Totaal incl. BTW",
     addLine: "+ Lijn toevoegen",
+    
+    // Actions
     saveQuote: "Offerte opslaan",
+    saveInvoice: "Factuur opslaan",
     printPdf: "Afdrukken / PDF",
-    convertToInvoice: "Omzetten naar Factuur →",
-    sendPeppol: "Verzenden via Peppol →"
-  }
+    convertToInvoice: "Omzetten naar Factuur",
+    sendPeppol: "Verzenden via Peppol",
+    
+    // Mention Légale Header
+    legalMentionTitle: "Verplichte wettelijke vermelding op het document",
+  },
 };
